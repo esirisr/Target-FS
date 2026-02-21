@@ -1,212 +1,329 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import API from '../services/api';
 import ProCard from '../components/ProCard';
 
 export default function ClientHome() {
   const [pros, setPros] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [notification, setNotification] = useState({ msg: '', type: '' });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [notifications, setNotifications] = useState([]);
 
-  // --- DATA LOADING LOGIC ---
-  const loadData = useCallback(async (successMsg = null) => {
+  // Internal notification helper – now renders as toasts
+  const addNotification = (message, type = 'error') => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, message, type }]);
+
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  };
+
+  const loadData = async () => {
     try {
+      const res = await API.get('/admin/dashboard');
+      const verifiedPros = (res.data.allPros || []).filter(
+        p => p.isVerified && !p.isSuspended
+      );
+      setPros(verifiedPros);
+
       const token = localStorage.getItem('token');
-      
-      if (!token) {
-        setError("Your session has expired. Please log in again.");
-        setLoading(false);
-        return;
+      if (token) {
+        const bookRes = await API.get('/bookings/my-bookings');
+        setRequests(bookRes.data.bookings || []);
       }
-
-      const headers = { 
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
-      /**
-       * IMPORTANT: We hit '/api/admin/dashboard' because we updated 
-       * the backend to allow the 'client' role for this specific route.
-       */
-      const [res, bookRes] = await Promise.all([
-        axios.get('https://tsbe-production.up.railway.app/api/admin/dashboard', { headers }),
-        axios.get('https://tsbe-production.up.railway.app/api/bookings/my-bookings', { headers })
-      ]);
-
-      // Robust extraction of professional list
-      const fetchedPros = res.data.allPros || res.data.pros || (Array.isArray(res.data) ? res.data : []);
-      
-      // Filter for verified and active pros only
-      setPros(fetchedPros.filter(p => p.isVerified && !p.isSuspended));
-      setRequests(bookRes.data.bookings || []);
-      setError(null);
-
-      if (successMsg) showNotification(successMsg, 'success');
     } catch (err) {
-      console.error("Fetch Error Details:", err.response || err);
-      
-      if (err.response?.status === 403) {
-        setError("Access Denied (403): The backend is blocking your 'client' role. Check adminRoutes.js.");
-      } else if (err.response?.status === 401) {
-        setError("Unauthorized (401): Your token is invalid or expired.");
-      } else {
-        setError("Network Error: Could not reach the server. Check your connection.");
-      }
+      console.error("Error loading marketplace data:", err);
+      addNotification('Failed to load professionals');
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  // --- NOTIFICATION HANDLER ---
-  const showNotification = (msg, type) => {
-    setNotification({ msg, type });
-    setTimeout(() => setNotification({ msg: '', type: '' }), 4000);
   };
 
-  // --- LIFECYCLE ---
-  useEffect(() => { 
-    loadData(); 
-    const interval = setInterval(() => loadData(), 30000); // Poll every 30s
-    return () => clearInterval(interval);
-  }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  // --- RENDER LOADING STATE ---
-  if (loading) return (
-    <div style={styles.loaderContainer}>
-      <div style={styles.spinner}></div>
-      <p style={styles.loaderText}>Opening Marketplace...</p>
-    </div>
+  const filteredPros = pros.filter(pro =>
+    pro.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    pro.skills?.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    pro.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  if (loading) {
+    return (
+      <div style={styles.loaderContainer}>
+        <div className="marketplace-loader"></div>
+        <p style={styles.loaderText}>Discovering top professionals…</p>
+        <style>{`
+          .marketplace-loader {
+            width: 80px;
+            height: 80px;
+            border: 6px solid rgba(99, 102, 241, 0.1);
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: market-spin 1s ease-in-out infinite;
+            box-shadow: 0 15px 30px -10px rgba(99, 102, 241, 0.3);
+          }
+          @keyframes market-spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
-    <div style={styles.pageWrapper}>
-      {/* SIDEBAR: ACTIVE BOOKINGS */}
-      <aside style={styles.sidebar}>
-        <div style={styles.hubHeader}>
-          <h3 style={styles.hubTitle}>My Requests</h3>
-          <div style={styles.liveBadge}>
-            <span style={styles.livePulse}></span>
-            LIVE
-          </div>
-        </div>
-
-        <div style={styles.sidebarScrollArea}>
-          {requests.length > 0 ? (
-            requests.map(req => {
-              const skillName = req.professional?.skills?.[0] || 'Expert';
-              const isAccepted = req.status === 'accepted';
-              
-              return (
-                <div key={req._id} style={{
-                  ...styles.requestCard,
-                  borderLeft: isAccepted ? '4px solid #10b981' : '4px solid #cbd5e1'
-                }}>
-                  <p style={styles.miniLabel}>{skillName.toUpperCase()}</p>
-                  <p style={styles.reqProName}>{req.professional?.name}</p>
-                  
-                  <div style={{
-                    ...styles.statusBadge,
-                    backgroundColor: isAccepted ? '#ecfdf5' : '#f8fafc',
-                    color: isAccepted ? '#059669' : '#64748b'
-                  }}>
-                    {req.status?.toUpperCase()}
-                  </div>
-
-                  {isAccepted && (
-                    <div style={styles.callAlert}>
-                      <p style={styles.alertText}>📞 Professional calling soon</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          ) : (
-            <div style={styles.emptyContainer}>
-              <p style={styles.emptyText}>No active bookings</p>
+    <div style={styles.page}>
+      {/* Fixed toast container for normal notifications */}
+      {notifications.length > 0 && (
+        <div style={styles.toastContainer}>
+          {notifications.map(n => (
+            <div
+              key={n.id}
+              style={{
+                ...styles.notificationItem,
+                borderLeftColor: n.type === 'success' ? '#22c55e' : '#ef4444',
+              }}
+            >
+              {n.message}
             </div>
-          )}
+          ))}
         </div>
-        
-        <div style={styles.sidebarFooter}>
-            <p style={styles.footerText}>Secure Somali Platform</p>
-        </div>
-      </aside>
+      )}
 
-      {/* MAIN CONTENT: MARKETPLACE */}
-      <main style={styles.mainContent}>
-        {notification.msg && (
-          <div style={{
-            ...styles.notification,
-            backgroundColor: notification.type === 'success' ? '#059669' : '#dc2626'
-          }}>
-            {notification.msg}
+      <div style={styles.backgroundBlobs}>
+        <div style={styles.blob1}></div>
+        <div style={styles.blob2}></div>
+        <div style={styles.blob3}></div>
+      </div>
+
+      <div style={styles.container}>
+        <header style={styles.hero}>
+          <h1 style={styles.title}>
+            Find your <span style={styles.gradient}>perfect expert</span>
+          </h1>
+          <p style={styles.subtitle}>
+            Browse verified professionals and hire the best talent for your project
+          </p>
+
+          <div style={styles.searchWrapper}>
+            <span style={styles.searchIcon}>🔍</span>
+            <input
+              type="text"
+              placeholder="Search by name, skill, or location..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={styles.searchInput}
+            />
           </div>
-        )}
-
-        <header style={styles.marketHeader}>
-          <h2 style={styles.title}>Find a Local Professional</h2>
-          <p style={styles.subtitle}>Verified plumbers, mechanics, and painters in Hargeisa.</p>
         </header>
 
-        {error ? (
-          <div style={styles.errorBox}>
-            <p style={{ fontWeight: 'bold' }}>⚠️ Oops!</p>
-            <p>{error}</p>
-            <button onClick={() => { setLoading(true); loadData(); }} style={styles.retryBtn}>
-              Retry Connection
-            </button>
-          </div>
-        ) : (
-          <div style={styles.proGrid}>
-            {pros.length > 0 ? (
-              pros.map(p => (
-                <ProCard 
-                  key={p._id} 
-                  pro={p} 
-                  onAction={(msg) => loadData(msg)} 
-                  userBookings={requests} 
-                />
-              ))
-            ) : (
-              <div style={styles.noData}>
-                <p>No professionals are currently online in Hargeisa.</p>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
+        <section>
+          {filteredPros.length > 0 ? (
+            <div style={styles.proGrid}>
+              {filteredPros.map(p => (
+                <div key={p._id} style={styles.cardWrapper}>
+                  <ProCard
+                    pro={p}
+                    onAction={loadData}
+                    userBookings={requests}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={styles.emptyState}>
+              <span style={styles.emptyIcon}>🔎</span>
+              <p style={styles.emptyText}>No professionals match your search</p>
+              <p style={styles.emptySubtext}>Try different keywords or clear the filter</p>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
 
-// --- STYLES (NO CHANGES NEEDED) ---
+// Styles (updated for toast notifications)
 const styles = {
-  pageWrapper: { display: 'flex', minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: "'Inter', sans-serif" },
-  sidebar: { width: '260px', backgroundColor: '#fff', borderRight: '1px solid #e2e8f0', padding: '24px 15px', position: 'sticky', top: 0, height: '100vh', display: 'flex', flexDirection: 'column' },
-  hubHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' },
-  hubTitle: { fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' },
-  liveBadge: { display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: '#fef2f2', color: '#ef4444', padding: '4px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '900' },
-  livePulse: { width: '6px', height: '6px', backgroundColor: '#ef4444', borderRadius: '50%' },
-  sidebarScrollArea: { flex: 1, overflowY: 'auto' },
-  requestCard: { padding: '12px', borderRadius: '8px', backgroundColor: '#fff', border: '1px solid #f1f5f9', marginBottom: '10px' },
-  miniLabel: { fontSize: '10px', fontWeight: '800', color: '#94a3b8', marginBottom: '4px' },
-  reqProName: { fontSize: '14px', fontWeight: '700', color: '#1e293b', marginBottom: '8px' },
-  statusBadge: { display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '800' },
-  callAlert: { padding: '8px', backgroundColor: '#f0fdf4', borderRadius: '6px', marginTop: '8px' },
-  alertText: { fontSize: '11px', fontWeight: '700', color: '#166534', margin: 0 },
-  sidebarFooter: { paddingTop: '15px', borderTop: '1px solid #f1f5f9' },
-  footerText: { fontSize: '11px', color: '#94a3b8', textAlign: 'center' },
-  mainContent: { flex: 1, padding: '40px', overflowY: 'auto' },
-  marketHeader: { textAlign: 'center', marginBottom: '40px' },
-  title: { fontSize: '32px', fontWeight: '900', color: '#0f172a', marginBottom: '8px' },
-  subtitle: { color: '#64748b', fontSize: '16px' },
-  proGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' },
-  errorBox: { textAlign: 'center', padding: '40px', backgroundColor: '#fee2e2', borderRadius: '12px', color: '#b91c1c', border: '1px solid #fecaca' },
-  retryBtn: { marginTop: '15px', padding: '10px 20px', backgroundColor: '#b91c1c', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
-  noData: { gridColumn: '1/-1', textAlign: 'center', padding: '60px', color: '#94a3b8' },
-  loaderContainer: { textAlign: 'center', marginTop: '30vh' },
-  spinner: { width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #3498db', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' },
-  loaderText: { marginTop: '15px', fontWeight: '600', color: '#64748b' },
-  notification: { position: 'fixed', top: '20px', right: '20px', padding: '12px 24px', color: '#fff', borderRadius: '8px', zIndex: 100, fontWeight: 'bold' }
+  page: {
+    position: 'relative',
+    minHeight: '100vh',
+    background: 'linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%)',
+  },
+  container: {
+    maxWidth: '1280px',
+    margin: '0 auto',
+    padding: '40px 24px 80px',
+    position: 'relative',
+    zIndex: 2,
+  },
+  // New fixed toast container
+  toastContainer: {
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    zIndex: 9999,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    maxWidth: '350px',
+  },
+  notificationItem: {
+    padding: '12px 18px',
+    borderRadius: '8px',
+    background: '#fff',
+    borderLeft: '4px solid',
+    boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+    fontSize: '0.95rem',
+    color: '#1e293b',
+    animation: 'slideIn 0.2s ease',
+  },
+  backgroundBlobs: {
+    position: 'absolute',
+    inset: 0,
+    overflow: 'hidden',
+    zIndex: 0,
+  },
+  blob1: {
+    position: 'absolute',
+    top: '-120px',
+    right: '-80px',
+    width: '500px',
+    height: '500px',
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, rgba(99,102,241,0) 70%)',
+    filter: 'blur(80px)',
+    animation: 'float 20s ease-in-out infinite',
+  },
+  blob2: {
+    position: 'absolute',
+    bottom: '-150px',
+    left: '-100px',
+    width: '550px',
+    height: '550px',
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(236,72,153,0.15) 0%, rgba(236,72,153,0) 70%)',
+    filter: 'blur(90px)',
+    animation: 'float 24s ease-in-out infinite reverse',
+  },
+  blob3: {
+    position: 'absolute',
+    top: '40%',
+    left: '55%',
+    width: '400px',
+    height: '400px',
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0) 70%)',
+    filter: 'blur(70px)',
+    animation: 'pulse-glow 10s ease-in-out infinite',
+  },
+  hero: {
+    textAlign: 'center',
+    marginBottom: '40px',
+  },
+  title: {
+    fontSize: 'clamp(2.5rem, 6vw, 4rem)',
+    fontWeight: '900',
+    margin: '0 0 16px',
+    color: '#0f172a',
+    lineHeight: 1.2,
+  },
+  gradient: {
+    background: 'linear-gradient(135deg, #4f46e5, #ec4899)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+  },
+  subtitle: {
+    fontSize: '1.2rem',
+    color: '#475569',
+    maxWidth: '600px',
+    margin: '0 auto 36px',
+  },
+  searchWrapper: {
+    maxWidth: '600px',
+    margin: '0 auto',
+    position: 'relative',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '20px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    fontSize: '1.3rem',
+    opacity: 0.6,
+  },
+  searchInput: {
+    width: '100%',
+    padding: '18px 24px 18px 58px',
+    fontSize: '1.1rem',
+    borderRadius: '60px',
+    border: '2px solid rgba(226,232,240,0.6)',
+    background: 'rgba(255,255,255,0.85)',
+    backdropFilter: 'blur(10px)',
+    boxShadow: '0 15px 30px -12px rgba(0,0,0,0.1)',
+  },
+  proGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+    gap: '28px',
+  },
+  emptyState: {
+    textAlign: 'center',
+    padding: '60px 20px',
+    background: 'rgba(255,255,255,0.6)',
+    backdropFilter: 'blur(8px)',
+    borderRadius: '48px',
+    border: '1px solid rgba(226,232,240,0.6)',
+  },
+  emptyIcon: {
+    fontSize: '4rem',
+    display: 'block',
+    marginBottom: '20px',
+    opacity: 0.6,
+  },
+  emptyText: {
+    fontSize: '1.4rem',
+    fontWeight: '600',
+    color: '#334155',
+    margin: '0 0 8px',
+  },
+  emptySubtext: {
+    fontSize: '1rem',
+    color: '#64748b',
+    margin: 0,
+  },
+  loaderContainer: {
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'linear-gradient(145deg, #f8fafc, #f1f5f9)',
+  },
+  loaderText: {
+    marginTop: '24px',
+    fontSize: '1.2rem',
+    color: '#1e293b',
+    fontWeight: '500',
+  },
 };
+
+// Add animation keyframes (optional, can be added in global CSS or style tag)
+const styleSheet = document.createElement("style");
+styleSheet.innerText = `
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+`;
+document.head.appendChild(styleSheet);

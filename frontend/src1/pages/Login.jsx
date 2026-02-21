@@ -7,40 +7,11 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [notification, setNotification] = useState(null);
-  const [errors, setErrors] = useState({});
-
   const navigate = useNavigate();
-
-  const showNotification = (message, type = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!email) {
-      newErrors.email = "Email is required.";
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Enter a valid email address.";
-    }
-
-    if (!password) {
-      newErrors.password = "Password is required.";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) return;
-
     setLoading(true);
-    setErrors({});
 
     try {
       const res = await login({ email, password });
@@ -49,21 +20,14 @@ export default function Login() {
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
 
-      showNotification("Welcome back! Successfully signed in.", "success");
+      if (role === 'admin') navigate('/admin');
+      else if (role === 'pro') navigate('/pro-dashboard');
+      else if (role === 'client') navigate('/client-home');
+      else navigate('/');
 
-      setTimeout(() => {
-        if (role === 'admin') navigate('/admin');
-        else if (role === 'pro') navigate('/pro-dashboard');
-        else if (role === 'client') navigate('/client-home');
-        else navigate('/');
-      }, 800);
-
+      alert("Welcome back!");
     } catch (err) {
-      const message =
-        err.response?.data?.message || "Invalid email or password.";
-
-      setErrors({ general: message });
-      showNotification(message, "error");
+      alert(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -74,25 +38,6 @@ export default function Login() {
       <div style={styles.orb1}></div>
       <div style={styles.orb2}></div>
 
-      {/* Notification */}
-      {notification && (
-        <div
-          style={{
-            ...styles.notification,
-            backgroundColor:
-              notification.type === 'success' ? '#16a34a' : '#dc2626',
-          }}
-        >
-          <span>{notification.message}</span>
-          <button
-            style={styles.closeBtn}
-            onClick={() => setNotification(null)}
-          >
-            ×
-          </button>
-        </div>
-      )}
-
       <form onSubmit={handleLogin} style={styles.card}>
         <header style={styles.header}>
           <div style={styles.badge}>Secure Access</div>
@@ -101,28 +46,16 @@ export default function Login() {
           <p style={styles.subtitle}>Welcome back to the community</p>
         </header>
 
-        {/* General Error */}
-        {errors.general && (
-          <div style={styles.generalError}>
-            {errors.general}
-          </div>
-        )}
-
         <div style={styles.inputGroup}>
           <label style={styles.label}>Email Address</label>
           <input
             type="email"
             placeholder="name@example.com"
-            style={{
-              ...styles.input,
-              borderColor: errors.email ? '#dc2626' : '#e2e8f0'
-            }}
+            style={styles.input}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
           />
-          {errors.email && (
-            <span style={styles.errorText}>{errors.email}</span>
-          )}
         </div>
 
         <div style={styles.inputGroup}>
@@ -130,16 +63,11 @@ export default function Login() {
           <input
             type="password"
             placeholder="••••••••"
-            style={{
-              ...styles.input,
-              borderColor: errors.password ? '#dc2626' : '#e2e8f0'
-            }}
+            style={styles.input}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
           />
-          {errors.password && (
-            <span style={styles.errorText}>{errors.password}</span>
-          )}
         </div>
 
         <button
@@ -149,7 +77,6 @@ export default function Login() {
             ...styles.button,
             backgroundColor: isHovered ? '#1e293b' : '#0f172a',
             transform: isHovered ? 'translateY(-2px)' : 'none',
-            opacity: loading ? 0.7 : 1
           }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -202,56 +129,16 @@ const styles = {
     background: 'rgba(59, 130, 246, 0.06)',
     filter: 'blur(90px)',
   },
-  notification: {
-    position: 'absolute',
-    top: '30px',
-    right: '30px',
-    padding: '16px 22px',
-    borderRadius: '14px',
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: '14px',
-    boxShadow: '0 12px 25px rgba(0,0,0,0.15)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '15px',
-    minWidth: '280px',
-    animation: 'slideFade 0.35s ease',
-    zIndex: 9999,
-  },
-  closeBtn: {
-    background: 'transparent',
-    border: 'none',
-    color: '#ffffff',
-    fontSize: '18px',
-    cursor: 'pointer',
-    fontWeight: '700',
-  },
-  generalError: {
-    backgroundColor: '#fee2e2',
-    color: '#991b1b',
-    padding: '12px 16px',
-    borderRadius: '10px',
-    marginBottom: '20px',
-    fontSize: '14px',
-    fontWeight: '600',
-  },
-  errorText: {
-    color: '#dc2626',
-    fontSize: '12px',
-    marginTop: '6px',
-    fontWeight: '500',
-  },
   card: {
     width: '100%',
-    maxWidth: '560px',
+    maxWidth: '560px', // widened from 420px (≈30%+)
     backgroundColor: '#ffffff',
-    padding: '48px',
+    padding: '48px', // more breathing space
     borderRadius: '26px',
     boxShadow: '0 28px 55px -14px rgba(0,0,0,0.12)',
     border: '1px solid #e2e8f0',
     zIndex: 1,
+    boxSizing: 'border-box',
   },
   header: { textAlign: 'center', marginBottom: '36px' },
   badge: {
@@ -266,7 +153,13 @@ const styles = {
     letterSpacing: '0.9px',
     marginBottom: '10px',
   },
-  title: { margin: 0, fontSize: '30px', fontWeight: '900', color: '#0f172a' },
+  title: {
+    margin: '0',
+    fontSize: '30px',
+    fontWeight: '900',
+    color: '#0f172a',
+    letterSpacing: '-0.5px',
+  },
   divider: {
     width: '36px',
     height: '4px',
@@ -275,7 +168,11 @@ const styles = {
     borderRadius: '12px',
   },
   subtitle: { color: '#64748b', fontSize: '15px', fontWeight: '500' },
-  inputGroup: { display: 'flex', flexDirection: 'column', marginBottom: '20px' },
+  inputGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    marginBottom: '24px',
+  },
   label: {
     marginBottom: '8px',
     fontSize: '11px',
@@ -291,6 +188,7 @@ const styles = {
     fontSize: '15px',
     backgroundColor: '#f8fafc',
     outline: 'none',
+    transition: 'border-color 0.2s',
   },
   button: {
     width: '100%',
@@ -315,5 +213,6 @@ const styles = {
     color: '#4f46e5',
     fontWeight: '700',
     cursor: 'pointer',
+    textDecoration: 'none',
   },
 };
