@@ -95,9 +95,9 @@ export default function ProDashboard() {
             </div>
           </div>
           <div style={{ ...styles.statCard, borderBottomColor: '#10b981' }}>
-            <span style={styles.statIcon}>💰</span>
+            <span style={styles.statIcon}>✅</span>
             <div>
-              <p style={styles.statLabel}>Completed</p>
+              <p style={styles.statLabel}>Approved</p>
               <p style={styles.statValue}>{approvedCount}</p>
             </div>
           </div>
@@ -133,7 +133,16 @@ export default function ProDashboard() {
                     <div style={styles.clientInfo}>
                       <h4 style={styles.clientName}>{req.client?.name || 'Client'}</h4>
                       <p style={styles.detailText}>📍 {req.client?.location || 'Not provided'}</p>
-                      <p style={styles.detailText}>📧 {req.client?.email || 'N/A'}</p>
+                      
+                      {/* PHONE NUMBER REVEAL LOGIC */}
+                      {req.status === 'approved' ? (
+                        <>
+                           <p style={styles.detailText}>📧 {req.client?.email || 'N/A'}</p>
+                           <p style={styles.phoneNumberText}>📞 {req.client?.phone || 'No phone provided'}</p>
+                        </>
+                      ) : (
+                        <p style={styles.privacyNote}>🔒 Accept to see phone number</p>
+                      )}
                     </div>
 
                     <div style={styles.actions}>
@@ -158,11 +167,8 @@ export default function ProDashboard() {
                           </button>
                         </>
                       )}
-                      {req.status === 'approved' && (
-                        <a href={`tel:${req.client?.phone}`} style={styles.callBtn}>
-                           📞 Call Client
-                        </a>
-                      )}
+                      
+              
                     </div>
                   </div>
                 </div>
@@ -210,7 +216,6 @@ const styles = {
     margin: '0 auto',
     padding: '40px 20px',
   },
-  // BANNER STYLES
   reviewBanner: {
     background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
     border: '1px solid #fde68a',
@@ -291,6 +296,8 @@ const styles = {
   bookingBody: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' },
   clientName: { margin: '0 0 10px 0', fontSize: '1.1rem', fontWeight: '700' },
   detailText: { margin: '4px 0', fontSize: '0.9rem', color: '#64748b' },
+  phoneNumberText: { margin: '8px 0', fontSize: '1rem', fontWeight: '800', color: '#6366f1' },
+  privacyNote: { margin: '8px 0', fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' },
 
   actions: { display: 'flex', gap: '10px' },
   acceptBtn: { background: '#10b981', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: '700' },
