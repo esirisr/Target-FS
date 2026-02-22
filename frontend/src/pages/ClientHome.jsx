@@ -7,24 +7,13 @@ export default function ClientHome() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [notifications, setNotifications] = useState([]);
   const [user, setUser] = useState(null);
 
-  // Notification helper
-  const addNotification = (message, type = 'error') => {
-    const id = Date.now();
-    setNotifications(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 5000);
-  };
-
-  // Load marketplace + user profile
   const loadData = async () => {
     try {
       const [res, profile] = await Promise.all([
         API.get('/admin/dashboard'),
-        API.get('/profile') // must return user with location
+        API.get('/profile')
       ]);
 
       setUser(profile.data);
@@ -43,7 +32,6 @@ export default function ClientHome() {
 
     } catch (err) {
       console.error("Load error:", err);
-      addNotification('Failed to load professionals');
     } finally {
       setLoading(false);
     }
@@ -53,19 +41,14 @@ export default function ClientHome() {
     loadData();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
-  if (!user) return <div>Please login.</div>;
+  if (loading || !user) return null;
 
-  // 🔥 LOCATION FILTER (KEY PART)
+  // LOCATION FILTER
   const userLocation = user.location?.toLowerCase();
 
   const filteredPros = pros.filter(pro => {
-    const proLocation = pro.location?.toLowerCase();
-
     return (
-      proLocation &&
-      userLocation &&
-      proLocation === userLocation &&
+      pro.location?.toLowerCase() === userLocation &&
       (
         pro.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pro.skills?.some(skill =>
@@ -77,17 +60,11 @@ export default function ClientHome() {
 
   return (
     <div>
-      {notifications.map(n => (
-        <div key={n.id}>{n.message}</div>
-      ))}
-
-      <header>
-        <input
-          placeholder="Search..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-        />
-      </header>
+      <input
+        placeholder="Search..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
 
       {filteredPros.length > 0 ? (
         filteredPros.map(p => (
@@ -100,7 +77,7 @@ export default function ClientHome() {
           />
         ))
       ) : (
-        <div>No professionals in your location.</div>
+        <div>No professionals in your area.</div>
       )}
     </div>
   );
