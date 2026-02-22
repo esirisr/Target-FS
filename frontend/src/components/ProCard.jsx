@@ -78,7 +78,7 @@ export default function ProCard({ pro, onAction, userBookings = [] }) {
       {/* Info Section with Icons */}
       <div style={styles.infoSection}>
         <div style={styles.infoItem}>📍 {data.location || "Laascaanood"}</div>
-        <div style={styles.infoItem}>📞 {data.phone || "N/A"}</div>
+      
         <div style={styles.infoItem}>✉️ {data.email || "N/A"}</div>
         <div style={styles.infoItem}>
           ⭐ {averageRating} ({data.reviewCount || 0} reviews)
