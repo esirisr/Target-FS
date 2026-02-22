@@ -16,7 +16,7 @@ export const getAdminDashboardData = async (req, res) => {
 
     const userLocation = currentUser.location?.trim().toLowerCase() || '';
 
-    // all pros (exclude master admin)
+    // all pros (exclude master admin if needed)
     const allPros = await User.find({
       role: 'pro',
       email: { $ne: 'himiloone@gmail.com' }
@@ -48,7 +48,7 @@ export const getAdminDashboardData = async (req, res) => {
         proLocation === userLocation
       );
     }).map(p => {
-      delete p.phone; // hide phone
+      delete p.phone; // hide phone for clients
       return p;
     });
 
