@@ -168,7 +168,12 @@ export default function ProDashboard() {
                         </>
                       )}
                       
-              
+                      {/* CALL BUTTON VISIBLE ONLY AFTER ACCEPTING */}
+                      {req.status === 'approved' && req.client?.phone && (
+                        <a href={`tel:${req.client.phone}`} style={styles.callBtn}>
+                        
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
