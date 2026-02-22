@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-export default function ProCard({ 
-  pro, 
-  onAction, 
-  userBookings = [], 
-  role = "guest"   // 👈 added role prop
+export default function ProCard({
+  pro,
+  onAction,
+  userBookings = [],
+  role = "guest"
 }) {
 
   const [isHovered, setIsHovered] = useState(false);
@@ -14,19 +14,19 @@ export default function ProCard({
 
   const data = pro.professional || pro;
   const displayName = data.name || "Professional";
-  const displaySkills = data.skills?.length > 0 
-    ? data.skills.join(', ') 
+  const displaySkills = data.skills?.length > 0
+    ? data.skills.join(', ')
     : "No Skills";
 
-  const bookingToRate = userBookings.find(b => 
-    b.professional?._id === data._id && 
-    (b.status === 'approved' || b.status === 'accepted') && 
+  const bookingToRate = userBookings.find(b =>
+    b.professional?._id === data._id &&
+    (b.status === 'approved' || b.status === 'accepted') &&
     !b.rating
   );
 
   const canRate = !!bookingToRate;
-  const averageRating = data.rating 
-    ? Number(data.rating).toFixed(1) 
+  const averageRating = data.rating
+    ? Number(data.rating).toFixed(1)
     : "0.0";
 
   // ⭐ RATE
@@ -75,8 +75,8 @@ export default function ProCard({
 
     } catch (err) {
       const msg = err.response?.data?.message || "";
-      alert(msg.includes("limit") 
-        ? `Daily limit reached.` 
+      alert(msg.includes("limit")
+        ? `Daily limit reached.`
         : "Booking failed."
       );
     } finally {
@@ -116,10 +116,10 @@ export default function ProCard({
           📍 {data.location || "Laascaanood"}
         </div>
 
-        {/* 🔒 PHONE hidden for clients */}
-        {role !== 'client' && (
+        {/* PHONE only for pro or admin */}
+        {(role === 'pro' || role === 'admin') && data.phone && (
           <div style={styles.infoItem}>
-            📞 {data.phone || "N/A"}
+            📞 {data.phone}
           </div>
         )}
 
@@ -153,7 +153,7 @@ export default function ProCard({
       {/* RATING */}
       <div style={styles.ratingSection}>
         <div style={styles.starRow}>
-          {[1,2,3,4,5].map((s) => (
+          {[1, 2, 3, 4, 5].map((s) => (
             <span
               key={s}
               onMouseEnter={() => canRate && setHoverStar(s)}
