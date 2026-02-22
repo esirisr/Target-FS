@@ -1,12 +1,20 @@
 import express from 'express';
-const router = express.Router();
-import { getAdminDashboardData, verifyPro, toggleSuspension, deleteUser } from '../controllers/adminController.js';
+import {
+  getAdminDashboardData,
+  verifyPro,
+  toggleSuspension,
+  deleteUser
+} from '../controllers/adminController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
-router.use(protect);
-router.get('/dashboard', getAdminDashboardData);
-router.patch('/verify/:id', authorize('admin'), verifyPro);
-router.patch('/toggle-suspension/:id', authorize('admin'), toggleSuspension);
-router.delete('/user/:id', authorize('admin'), deleteUser);
+const router = express.Router();
+
+// dashboard (admin or client)
+router.get('/dashboard', protect, getAdminDashboardData);
+
+// admin-only actions
+router.patch('/verify/:id', protect, authorize('admin'), verifyPro);
+router.patch('/suspend/:id', protect, authorize('admin'), toggleSuspension);
+router.delete('/user/:id', protect, authorize('admin'), deleteUser);
 
 export default router;
