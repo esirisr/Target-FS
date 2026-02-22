@@ -54,13 +54,13 @@ export default function Register() {
       newErrors.location = "Please select your city";
     }
 
-    // Phone validation: required only for professionals
-    if (formData.role === 'pro' && !formData.phone.trim()) {
-      newErrors.phone = "Phone number is required for professionals";
-    }
-
-    if (formData.role === 'pro' && !formData.skills) {
-      newErrors.skills = "Please select your trade";
+    if (formData.role === 'pro') {
+      if (!formData.phone.trim()) {
+        newErrors.phone = "Phone number is required";
+      }
+      if (!formData.skills) {
+        newErrors.skills = "Please select your trade";
+      }
     }
 
     return newErrors;
@@ -79,15 +79,12 @@ export default function Register() {
       return;
     }
 
-    // Prepare data for backend – skills must be an array for pros
-    const dataToSend = {
-      ...formData,
-      skills: formData.role === 'pro' && formData.skills ? [formData.skills] : []
-    };
-
-    console.log('Sending registration data:', dataToSend);
-
     try {
+      const dataToSend = {
+        ...formData,
+        skills: formData.role === 'pro' && formData.skills ? [formData.skills] : []
+      };
+
       await register(dataToSend);
 
       showNotification("Registration successful! Redirecting to login...", "success");
@@ -214,25 +211,6 @@ export default function Register() {
             {errors.password && <span style={styles.errorText}>{errors.password}</span>}
           </div>
 
-          {/* Phone - Always visible, required only for pros */}
-          <div style={{ ...styles.inputGroup, gridColumn: 'span 3' }}>
-            <label style={styles.label}>
-              Phone Number {formData.role === 'pro' && <span style={{ color: '#dc2626' }}>*</span>}
-            </label>
-            <input
-              type="tel"
-              style={{
-                ...styles.input,
-                borderColor: errors.phone ? '#dc2626' : '#cbd5e1'
-              }}
-              value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
-            />
-            {errors.phone && <span style={styles.errorText}>{errors.phone}</span>}
-          </div>
-
           {/* Role Toggle */}
           <div style={{ ...styles.inputGroup, gridColumn: 'span 3' }}>
             <label style={styles.label}>I am joining as a:</label>
@@ -262,27 +240,44 @@ export default function Register() {
             </div>
           </div>
 
-          {/* Skills - Only for pros */}
           {formData.role === 'pro' && (
-            <div style={{ ...styles.inputGroup, gridColumn: 'span 3' }}>
-              <label style={styles.label}>Primary Skill / Trade</label>
-              <select
-                style={{
-                  ...styles.input,
-                  borderColor: errors.skills ? '#dc2626' : '#cbd5e1'
-                }}
-                value={formData.skills}
-                onChange={(e) =>
-                  setFormData({ ...formData, skills: e.target.value })
-                }
-              >
-                <option value="">Select your trade</option>
-                {skillOptions.map(skill => (
-                  <option key={skill} value={skill}>{skill}</option>
-                ))}
-              </select>
-              {errors.skills && <span style={styles.errorText}>{errors.skills}</span>}
-            </div>
+            <>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Phone Number</label>
+                <input
+                  type="tel"
+                  style={{
+                    ...styles.input,
+                    borderColor: errors.phone ? '#dc2626' : '#cbd5e1'
+                  }}
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
+                />
+                {errors.phone && <span style={styles.errorText}>{errors.phone}</span>}
+              </div>
+
+              <div style={{ ...styles.inputGroup, gridColumn: 'span 2' }}>
+                <label style={styles.label}>Primary Skill / Trade</label>
+                <select
+                  style={{
+                    ...styles.input,
+                    borderColor: errors.skills ? '#dc2626' : '#cbd5e1'
+                  }}
+                  value={formData.skills}
+                  onChange={(e) =>
+                    setFormData({ ...formData, skills: e.target.value })
+                  }
+                >
+                  <option value="">Select your trade</option>
+                  {skillOptions.map(skill => (
+                    <option key={skill} value={skill.toLowerCase()}>{skill}</option>
+                  ))}
+                </select>
+                {errors.skills && <span style={styles.errorText}>{errors.skills}</span>}
+              </div>
+            </>
           )}
 
           <div style={{ gridColumn: 'span 3', marginTop: '20px' }}>

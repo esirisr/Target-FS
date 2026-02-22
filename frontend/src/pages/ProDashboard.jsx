@@ -35,73 +35,80 @@ export default function ProDashboard() {
     }
   };
 
-  const totalBookings = bookings.length;
   const pendingCount = bookings.filter(b => b.status === 'pending').length;
   const approvedCount = bookings.filter(b => b.status === 'approved').length;
-  const rejectedCount = bookings.filter(b => b.status === 'rejected').length;
 
   if (loading) {
     return (
       <div style={styles.loaderContainer}>
         <div className="loader-spinner"></div>
-        <p style={styles.loaderText}>Preparing your workspace…</p>
-        <style>{`
-          .loader-spinner {
-            width: 70px;
-            height: 70px;
-            border: 5px solid rgba(99, 102, 241, 0.1);
-            border-top-color: #6366f1;
-            border-radius: 50%;
-            animation: loader-spin 0.8s ease-in-out infinite;
-          }
-          @keyframes loader-spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+        <p style={styles.loaderText}>Syncing your professional profile…</p>
       </div>
     );
   }
 
-  const isVerified = user?.isVerified === true || user?.status === 'approved';
+  // --- LOGIC FOR VERIFICATION STATUS ---
+  const isVerified = user?.isVerified === true;
+  const isSuspended = user?.isSuspended === true;
 
   return (
     <div style={styles.page}>
       <div style={styles.container}>
-
-        <div style={styles.statsGrid}>
-          <div style={styles.statCard}>
-            <span style={styles.statIcon}>📋</span>
+        
+        {/* Verification Status Banner */}
+        <div style={isSuspended ? styles.suspendedBanner : (isVerified ? styles.verifiedBanner : styles.reviewBanner)}>
+          <div style={styles.bannerContent}>
+            <span style={styles.bannerIcon}>
+              {isSuspended ? '🚫' : (isVerified ? '🛡️' : '⏳')}
+            </span>
             <div>
-              <p style={styles.statLabel}>Total Requests</p>
-              <p style={styles.statValue}>{totalBookings}</p>
-            </div>
-          </div>
-          <div style={{ ...styles.statCard, borderBottomColor: '#f59e0b' }}>
-            <span style={styles.statIcon}>⏳</span>
-            <div>
-              <p style={styles.statLabel}>Pending</p>
-              <p style={styles.statValue}>{pendingCount}</p>
-            </div>
-          </div>
-          <div style={{ ...styles.statCard, borderBottomColor: '#22c55e' }}>
-            <span style={styles.statIcon}>✅</span>
-            <div>
-              <p style={styles.statLabel}>Approved</p>
-              <p style={styles.statValue}>{approvedCount}</p>
-            </div>
-          </div>
-          <div style={{ ...styles.statCard, borderBottomColor: '#ef4444' }}>
-            <span style={styles.statIcon}>❌</span>
-            <div>
-              <p style={styles.statLabel}>Rejected</p>
-              <p style={styles.statValue}>{rejectedCount}</p>
+              <h2 style={styles.bannerTitle}>
+                {isSuspended 
+                  ? "Account Suspended" 
+                  : (isVerified ? "Approved & Verified" : "Your Account is Under Review")}
+              </h2>
+              <p style={styles.bannerSub}>
+                {isSuspended 
+                  ? "Please contact support to resolve account issues." 
+                  : (isVerified 
+                      ? "Your profile is live! You can now accept incoming requests." 
+                      : "You cannot accept requests yet.")}
+              </p>
             </div>
           </div>
         </div>
 
-        <div style={styles.grid}>
+        {/* Stats Section */}
+        <div style={styles.statsGrid}>
+          <div style={styles.statCard}>
+            <span style={styles.statIcon}>📊</span>
+            <div>
+              <p style={styles.statLabel}>Total Jobs</p>
+              <p style={styles.statValue}>{bookings.length}</p>
+            </div>
+          </div>
+          <div style={{ ...styles.statCard, borderBottomColor: '#f59e0b' }}>
+            <span style={styles.statIcon}>🔔</span>
+            <div>
+              <p style={styles.statLabel}>New Requests</p>
+              <p style={styles.statValue}>{pendingCount}</p>
+            </div>
+          </div>
+          <div style={{ ...styles.statCard, borderBottomColor: '#10b981' }}>
+            <span style={styles.statIcon}>💰</span>
+            <div>
+              <p style={styles.statLabel}>Completed</p>
+              <p style={styles.statValue}>{approvedCount}</p>
+            </div>
+          </div>
+        </div>
+
+        <div style={styles.mainLayout}>
           <section style={styles.mainCard}>
-            <h3 style={styles.sectionTitle}>📬 Incoming Requests</h3>
+            <div style={styles.headerRow}>
+              <h3 style={styles.sectionTitle}>📬 Job Queue</h3>
+              <button onClick={fetchData} style={styles.refreshBtn}>🔄 Refresh</button>
+            </div>
 
             {bookings.length > 0 ? (
               bookings.map((req) => (
@@ -115,160 +122,182 @@ export default function ProDashboard() {
                 >
                   <div style={styles.bookingHeader}>
                     <span style={styles.bookingStatusBadge(statusColor(req.status))}>
-                      {req.status.toUpperCase()}
+                      {req.status}
                     </span>
                     <span style={styles.bookingDate}>
-                      {new Date(req.createdAt).toLocaleDateString()}
+                      {new Date(req.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
 
-                  <div style={styles.bookingContent}>
-                    <div style={styles.clientDetails}>
-                      <p style={styles.clientName}>👤 {req.client?.name || 'Client'}</p>
-                      <p style={styles.clientInfo}>📧 {req.client?.email || 'N/A'}</p>
-                      <p style={styles.clientInfo}>
-                        📞{' '}
-                        {req.client?.phone ? (
-                          <a href={`tel:${req.client.phone}`} style={styles.link}>
-                            {req.client.phone}
-                          </a>
-                        ) : 'N/A'}
-                      </p>
-                      <p style={styles.clientInfo}>📍 {req.client?.location || 'N/A'}</p>
+                  <div style={styles.bookingBody}>
+                    <div style={styles.clientInfo}>
+                      <h4 style={styles.clientName}>{req.client?.name || 'Client'}</h4>
+                      <p style={styles.detailText}>📍 {req.client?.location || 'Not provided'}</p>
+                      <p style={styles.detailText}>📧 {req.client?.email || 'N/A'}</p>
                     </div>
 
-                    {req.status === 'pending' && isVerified && (
-                      <div style={styles.actions}>
-                        <button
-                          onClick={() => handleStatusUpdate(req._id, 'approved')}
-                          style={styles.actionBtn}
-                        >
-                          ✓ Accept
-                        </button>
-                        <button
-                          onClick={() => handleStatusUpdate(req._id, 'rejected')}
-                          style={styles.actionBtn}
-                        >
-                          ✕ Reject
-                        </button>
-                      </div>
-                    )}
+                    <div style={styles.actions}>
+                      {req.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => handleStatusUpdate(req._id, 'approved')}
+                            disabled={!isVerified || isSuspended}
+                            style={{
+                              ...styles.acceptBtn,
+                              opacity: (!isVerified || isSuspended) ? 0.5 : 1,
+                              cursor: (!isVerified || isSuspended) ? 'not-allowed' : 'pointer'
+                            }}
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleStatusUpdate(req._id, 'rejected')}
+                            style={styles.rejectBtn}
+                          >
+                            Decline
+                          </button>
+                        </>
+                      )}
+                      {req.status === 'approved' && (
+                        <a href={`tel:${req.client?.phone}`} style={styles.callBtn}>
+                           📞 Call Client
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))
             ) : (
-              <div style={styles.emptyState}>
-                <p>No requests yet</p>
+              <div style={styles.emptyContainer}>
+                <span style={styles.emptyIcon}>📭</span>
+                <p>No job requests found yet.</p>
               </div>
             )}
           </section>
         </div>
       </div>
+
+      <style>{`
+        .loader-spinner {
+          width: 50px;
+          height: 50px;
+          border: 4px solid #e2e8f0;
+          border-top-color: #6366f1;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .booking-card { transition: transform 0.2s ease; }
+        .booking-card:hover { transform: translateX(5px); }
+      `}</style>
     </div>
   );
 }
 
-// helpers
 const statusColor = (status) =>
-  status === 'approved' ? '#22c55e' :
+  status === 'approved' ? '#10b981' :
   status === 'rejected' ? '#ef4444' :
   '#f59e0b';
 
-// styles (fully functional — no function-style style bug)
 const styles = {
   page: {
-    position: 'relative',
+    background: '#f8fafc',
     minHeight: '100vh',
-    background: 'linear-gradient(145deg, #f1f5f9 0%, #f8fafc 100%)',
-    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+    fontFamily: "'Inter', sans-serif",
   },
   container: {
-    maxWidth: '1280px',
+    maxWidth: '1100px',
     margin: '0 auto',
-    padding: '40px 24px 80px',
+    padding: '40px 20px',
   },
+  // BANNER STYLES
+  reviewBanner: {
+    background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+    border: '1px solid #fde68a',
+    borderRadius: '24px',
+    padding: '24px',
+    marginBottom: '32px',
+    boxShadow: '0 4px 15px rgba(245, 158, 11, 0.1)',
+  },
+  verifiedBanner: {
+    background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+    border: '1px solid #bbf7d0',
+    borderRadius: '24px',
+    padding: '24px',
+    marginBottom: '32px',
+    boxShadow: '0 4px 15px rgba(16, 185, 129, 0.1)',
+  },
+  suspendedBanner: {
+    background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+    border: '1px solid #fecaca',
+    borderRadius: '24px',
+    padding: '24px',
+    marginBottom: '32px',
+  },
+  bannerContent: { display: 'flex', alignItems: 'center', gap: '20px' },
+  bannerIcon: { fontSize: '32px' },
+  bannerTitle: { margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#1e293b' },
+  bannerSub: { margin: '4px 0 0', color: '#475569', fontSize: '0.95rem' },
+
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
     gap: '20px',
     marginBottom: '40px',
   },
   statCard: {
-    background: '#ffffff',
-    borderRadius: '28px',
-    padding: '20px 24px',
+    background: '#fff',
+    padding: '24px',
+    borderRadius: '24px',
     display: 'flex',
     alignItems: 'center',
-    gap: '18px',
-    borderBottom: '4px solid #6366f1',
-    boxShadow: '0 15px 30px -12px rgba(0,0,0,0.1)',
+    gap: '20px',
+    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)',
+    borderBottom: '4px solid #6366f1'
   },
-  statIcon: { fontSize: '2.2rem' },
-  statLabel: { margin: 0, fontSize: '0.9rem', color: '#64748b' },
-  statValue: { margin: '4px 0 0', fontSize: '2rem', fontWeight: '800' },
+  statIcon: { fontSize: '28px' },
+  statLabel: { margin: 0, color: '#64748b', fontWeight: '600', fontSize: '0.9rem' },
+  statValue: { margin: 0, fontSize: '1.8rem', fontWeight: '900', color: '#0f172a' },
 
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 340px',
-    gap: '28px',
-  },
   mainCard: {
     background: '#fff',
-    borderRadius: '32px',
-    padding: '28px',
-    boxShadow: '0 20px 40px -12px rgba(0,0,0,0.1)',
+    borderRadius: '30px',
+    padding: '30px',
+    boxShadow: '0 20px 50px rgba(0,0,0,0.04)',
   },
-  sectionTitle: { fontSize: '1.4rem', marginBottom: '20px' },
+  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
+  sectionTitle: { margin: 0, fontSize: '1.5rem', fontWeight: '800' },
+  refreshBtn: { padding: '8px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'none', cursor: 'pointer', fontWeight: '600' },
 
   bookingCard: {
-    background: '#fff',
-    padding: '18px',
+    padding: '20px',
     borderRadius: '20px',
-    borderLeft: '6px solid',
-    marginBottom: '14px',
-    boxShadow: '0 8px 18px -6px rgba(0,0,0,0.06)',
+    background: '#fff',
+    border: '1px solid #f1f5f9',
+    borderLeftWidth: '6px',
+    marginBottom: '16px',
   },
-
-  bookingHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginBottom: '12px',
-  },
-
+  bookingHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '16px' },
   bookingStatusBadge: (color) => ({
-    background: color + '20',
+    background: color + '15',
     color: color,
-    padding: '4px 12px',
-    borderRadius: '40px',
-    fontSize: '0.75rem',
-    fontWeight: '700',
+    padding: '6px 14px',
+    borderRadius: '100px',
+    fontSize: '11px',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
   }),
-
-  bookingDate: { fontSize: '0.8rem', color: '#94a3b8' },
-
-  clientDetails: { flex: 1 },
-  clientName: { margin: '0 0 8px', fontWeight: '600' },
-  clientInfo: { margin: '4px 0', color: '#334155' },
+  bookingBody: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' },
+  clientName: { margin: '0 0 10px 0', fontSize: '1.1rem', fontWeight: '700' },
+  detailText: { margin: '4px 0', fontSize: '0.9rem', color: '#64748b' },
 
   actions: { display: 'flex', gap: '10px' },
+  acceptBtn: { background: '#10b981', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: '700' },
+  rejectBtn: { background: '#f1f5f9', color: '#64748b', border: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: '700' },
+  callBtn: { background: '#6366f1', color: '#fff', textDecoration: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: '700', fontSize: '0.9rem' },
 
-  actionBtn: {
-    padding: '8px 16px',
-    borderRadius: '24px',
-    border: 'none',
-    fontWeight: '600',
-    cursor: 'pointer',
-    background: '#f1f5f9',
-  },
-
-  emptyState: { textAlign: 'center', padding: '40px' },
-
-  loaderContainer: {
-    height: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loaderText: { marginTop: '16px' },
-  link: { color: '#2563eb', textDecoration: 'underline' },
+  emptyContainer: { textAlign: 'center', padding: '60px 0', color: '#94a3b8' },
+  emptyIcon: { fontSize: '48px', display: 'block', marginBottom: '10px' },
+  loaderContainer: { height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px' },
 };

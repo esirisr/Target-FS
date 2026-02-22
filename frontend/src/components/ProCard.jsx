@@ -1,83 +1,128 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import API from '../services/api';
 
-export default function ProCard({ pro, onAction, userBookings = [] }) {
+export default function ProCard({ pro, onAction, userBookings = [], onNotify }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [hoverStar, setHoverStar] = useState(0);
 
   const data = pro.professional || pro;
   const displayName = data.name || "Professional";
-  const displaySkills = data.skills && data.skills.length > 0 ? data.skills.join(', ') : "No Skills";
 
-  const bookingToRate = userBookings.find(b => 
-    b.professional?._id === data._id && 
-    (b.status === 'approved' || b.status === 'accepted') && 
+  const bookingToRate = userBookings.find(b =>
+    b.professional?._id === data._id &&
+    (b.status === 'approved' || b.status === 'accepted') &&
     !b.rating
   );
+
   const canRate = !!bookingToRate;
   const averageRating = data.rating ? Number(data.rating).toFixed(1) : "0.0";
 
   const handleRate = async (val) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('https://hbe-production.up.railway.app/api/bookings/rate', 
-        { bookingId: bookingToRate._id, ratingValue: val }, 
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert("Rating submitted!");
-      onAction(); 
+      await API.post('/bookings/rate', {
+        bookingId: bookingToRate._id,
+        ratingValue: val
+      });
+      onNotify('Rating submitted successfully!', 'success');
+      onAction();
     } catch (err) {
-      alert("Error saving rating.");
+      onNotify('Error saving rating.', 'error');
     }
   };
 
   const handleHire = async () => {
-    const hasPending = userBookings.some(b => b.professional?._id === data._id && b.status === 'pending');
-    if (hasPending) return alert(`You already ordered a ${displaySkills.split(',')[0].toLowerCase()}!`);
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+    const hasRecentPending = userBookings.some(b =>
+      b.professional?._id === data._id &&
+      b.status === 'pending' &&
+      new Date(b.createdAt) > twoHoursAgo
+    );
+
+    if (hasRecentPending) {
+      onNotify(
+        'You already have a pending request for this professional (submitted within the last 2 hours).',
+        'error'
+      );
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
-      if (!token) return alert("Please login first.");
+      if (!token) {
+        onNotify('Please login first.', 'error');
+        return;
+      }
+
       setIsBooking(true);
-      await axios.post('https://hbe-production.up.railway.app/api/bookings/create', { proId: data._id }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      alert("Hiring request sent successfully!");
+      await API.post('/bookings/create', { proId: data._id });
+
+      onNotify('Hiring request sent successfully!', 'success');
       onAction();
     } catch (err) {
       const msg = err.response?.data?.message || "";
-      alert(msg.includes("limit") ? `Daily limit reached.` : "Booking failed.");
+
+      if (msg.includes("limit")) {
+        onNotify('Daily limit reached for this professional.', 'error');
+      } else {
+        onNotify(
+          err.response?.data?.message || 'Booking failed. Please try again.',
+          'error'
+        );
+      }
     } finally {
       setIsBooking(false);
     }
   };
 
+  // ✅ Removed built-in plumber fallback
+  const skills = Array.isArray(data.skills) ? data.skills : [];
+
   return (
-    <div 
+    <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
         ...styles.card,
         transform: isHovered ? 'translateY(-8px)' : 'translateY(0)',
-        boxShadow: isHovered 
-          ? '0 20px 30px -10px rgba(79,70,229,0.2), 0 8px 15px rgba(0,0,0,0.1)' 
+        boxShadow: isHovered
+          ? '0 20px 30px -10px rgba(79,70,229,0.2), 0 8px 15px rgba(0,0,0,0.1)'
           : '0 10px 25px -5px rgba(0,0,0,0.05), 0 5px 10px -5px rgba(0,0,0,0.02)',
       }}
     >
-      {/* Status Badge */}
       <div style={styles.statusBadge}>
         <span style={styles.statusDot}>●</span> Active & Verified
       </div>
 
-      {/* Name and Skills */}
       <h3 style={styles.name}>{displayName}</h3>
-      <div style={styles.skillTag}>
-        {displaySkills}
-      </div>
 
-      {/* Info Section with Icons */}
+      {skills.length > 0 && (
+        <div style={styles.skillContainer}>
+          {skills.map((skill, index) => {
+            let skillName;
+            if (typeof skill === 'object' && skill !== null) {
+              skillName =
+                skill.name ||
+                skill.skill ||
+                skill.title ||
+                skill.value ||
+                String(skill);
+            } else {
+              skillName = String(skill);
+            }
+
+            return (
+              <span key={index} style={styles.skillBadge}>
+                {skillName}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
       <div style={styles.infoSection}>
-        <div style={styles.infoItem}>📍 {data.location || "Laascaanood"}</div>
+        <div style={styles.infoItem}>📍 {data.location || "N/A"}</div>
         <div style={styles.infoItem}>📞 {data.phone || "N/A"}</div>
         <div style={styles.infoItem}>✉️ {data.email || "N/A"}</div>
         <div style={styles.infoItem}>
@@ -85,21 +130,26 @@ export default function ProCard({ pro, onAction, userBookings = [] }) {
         </div>
       </div>
 
-      {/* Hire Button */}
-      <button 
+      <button
         onClick={handleHire}
         disabled={isBooking || data.dailyRequestCount >= 3}
         style={{
           ...styles.hireButton,
           opacity: (isBooking || data.dailyRequestCount >= 3) ? 0.7 : 1,
-          cursor: (isBooking || data.dailyRequestCount >= 3) ? 'not-allowed' : 'pointer',
+          cursor:
+            (isBooking || data.dailyRequestCount >= 3)
+              ? 'not-allowed'
+              : 'pointer',
         }}
         className="hire-button"
       >
-        {data.dailyRequestCount >= 3 ? 'Daily Limit Reached' : (isBooking ? 'Sending...' : 'Hire Now')}
+        {data.dailyRequestCount >= 3
+          ? 'Daily Limit Reached'
+          : isBooking
+          ? 'Sending...'
+          : 'Hire Now'}
       </button>
 
-      {/* Rating Stars */}
       <div style={styles.ratingSection}>
         <div style={styles.starRow}>
           {[1, 2, 3, 4, 5].map((s) => (
@@ -110,17 +160,27 @@ export default function ProCard({ pro, onAction, userBookings = [] }) {
               onClick={() => canRate && handleRate(s)}
               style={{
                 ...styles.star,
-                color: s <= (hoverStar || data.rating) ? '#f59e0b' : '#e2e8f0',
-                transform: hoverStar === s ? 'scale(1.3)' : 'scale(1)',
+                color:
+                  s <= (hoverStar || data.rating)
+                    ? '#f59e0b'
+                    : '#e2e8f0',
+                transform:
+                  hoverStar === s ? 'scale(1.3)' : 'scale(1)',
                 cursor: canRate ? 'pointer' : 'default',
               }}
-            >★</span>
+            >
+              ★
+            </span>
           ))}
         </div>
-        {canRate && <div style={styles.rateNowText}>Please rate this professional!</div>}
+
+        {canRate && (
+          <div style={styles.rateNowText}>
+            Please rate this professional!
+          </div>
+        )}
       </div>
 
-      {/* Hover effect for hire button */}
       <style>{`
         .hire-button {
           transition: all 0.3s ease;
@@ -134,6 +194,7 @@ export default function ProCard({ pro, onAction, userBookings = [] }) {
           font-size: 1rem;
           box-shadow: 0 8px 15px -5px rgba(79,70,229,0.3);
         }
+
         .hire-button:hover:not(:disabled) {
           transform: scale(1.02);
           box-shadow: 0 12px 20px -8px rgba(79,70,229,0.5);
@@ -149,7 +210,7 @@ const styles = {
     background: 'white',
     borderRadius: '24px',
     padding: '24px 20px',
-    width: '320px', // match grid min width
+    width: '320px',
     border: '1px solid rgba(226, 232, 240, 0.6)',
     display: 'flex',
     flexDirection: 'column',
@@ -157,7 +218,6 @@ const styles = {
     textAlign: 'center',
     transition: 'all 0.3s ease',
     position: 'relative',
-    backdropFilter: 'blur(4px)',
   },
   statusBadge: {
     background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)',
@@ -182,16 +242,20 @@ const styles = {
     margin: '0 0 8px 0',
     color: '#0f172a',
   },
-  skillTag: {
+  skillContainer: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '6px',
+    justifyContent: 'center',
+    marginBottom: '20px',
+  },
+  skillBadge: {
     background: 'linear-gradient(90deg, #4f46e5, #6366f1)',
     color: 'white',
-    padding: '6px 16px',
+    padding: '6px 14px',
     borderRadius: '40px',
     fontWeight: '600',
-    fontSize: '14px',
-    marginBottom: '20px',
-    boxShadow: '0 4px 10px -2px rgba(79,70,229,0.3)',
-    display: 'inline-block',
+    fontSize: '13px',
   },
   infoSection: {
     width: '100%',
@@ -210,7 +274,6 @@ const styles = {
     gap: '6px',
   },
   hireButton: {
-    // base styles are in the className; this object is merged with inline style
     width: '100%',
     marginBottom: '16px',
   },

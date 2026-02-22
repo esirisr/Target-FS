@@ -15,7 +15,7 @@ const ScrollToTop = () => {
   return null;
 };
 
-// Updated ProtectedRoute with Smart Redirects
+// ProtectedRoute with Smart Redirects
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('role'); 
@@ -23,7 +23,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   if (!token) return <Navigate to="/login" replace />;
   
   if (allowedRoles && !allowedRoles.includes(userRole)) {
-    // Redirect logic: Send them where they belong
     if (userRole === 'pro') return <Navigate to="/pro-dashboard" replace />;
     if (userRole === 'admin') return <Navigate to="/admin" replace />;
     if (userRole === 'client') return <Navigate to="/client-home" replace />;
@@ -38,9 +37,8 @@ const SmartHome = () => {
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 
-  if (!token) return <Home />; // Show landing page to guests
+  if (!token) return <Home />;
   
-  // Auto-redirect logged-in users to their workspace
   if (role === 'admin') return <Navigate to="/admin" replace />;
   if (role === 'pro') return <Navigate to="/pro-dashboard" replace />;
   return <Navigate to="/client-home" replace />;
@@ -54,35 +52,24 @@ function App() {
         <Navbar />
         <main style={styles.mainContent}>
           <Routes>
-            {/* Logic-based Home route */}
             <Route path="/" element={<SmartHome />} />
-            
-            {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            
-            {/* Admin Management */}
             <Route path="/admin" element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <Admin />
               </ProtectedRoute>
             } />
-
-            {/* Professional Dashboard */}
             <Route path="/pro-dashboard" element={
               <ProtectedRoute allowedRoles={['pro']}>
                 <ProDashboard />
               </ProtectedRoute>
             } />
-
-            {/* Client Marketplace */}
             <Route path="/client-home" element={
               <ProtectedRoute allowedRoles={['client', 'admin']}>
                 <ClientHome />
               </ProtectedRoute>
             } />
-            
-            {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
@@ -101,12 +88,12 @@ const styles = {
     flexDirection: 'column', 
     backgroundColor: '#f8fafc', 
     fontFamily: "'Inter', sans-serif",
-    overflowX: 'hidden' // Prevents horizontal scroll bugs
+    overflowX: 'hidden'
   },
   mainContent: { 
     flex: 1, 
     width: '100%', 
-    maxWidth: '1400px', // Slightly wider for 4-column grids on large monitors
+    maxWidth: '1400px',
     margin: '0 auto', 
     padding: '20px', 
     boxSizing: 'border-box' 

@@ -13,6 +13,7 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState('');
   const [notifications, setNotifications] = useState([]);
 
+  // Toast Notification System
   const addNotification = (message, type = 'error') => {
     const id = Date.now();
     setNotifications(prev => [...prev, { id, message, type }]);
@@ -24,7 +25,16 @@ export default function Admin() {
   const loadData = async () => {
     try {
       const res = await fetchDashboard();
-      setData(res.data);
+      
+      // --- SORTING LOGIC: Newest registrations at the top ---
+      const sortedPros = (res.data.allPros || []).sort((a, b) => {
+        // Extract timestamp from MongoDB _id (first 8 chars)
+        const timeA = parseInt(a._id.substring(0, 8), 16);
+        const timeB = parseInt(b._id.substring(0, 8), 16);
+        return timeB - timeA; // Descending order
+      });
+
+      setData({ ...res.data, allPros: sortedPros });
     } catch (err) {
       console.error("Admin Load Error:", err);
       addNotification("Failed to load dashboard data");
@@ -48,11 +58,11 @@ export default function Admin() {
         addNotification("Professional suspended", "success");
       } 
       else if (type === 'delete') {
+        if (!window.confirm("Are you sure? This action is permanent.")) return;
         await deleteUser(id);
         addNotification("Professional deleted", "success");
       }
-
-      loadData();
+      loadData(); // Refresh list after action
     } catch (err) {
       addNotification(err.response?.data?.message || "Action failed!");
     }
@@ -66,65 +76,48 @@ export default function Admin() {
 
   const totalPros = data.allPros.length;
   const verifiedCount = data.allPros.filter(p => p.isVerified).length;
-  const suspendedCount = data.allPros.filter(p => p.isSuspended).length;
   const pendingCount = data.allPros.filter(p => !p.isVerified && !p.isSuspended).length;
 
   if (loading) {
     return (
       <div style={styles.loaderContainer}>
         <div className="admin-loader"></div>
-        <p style={styles.loaderText}>Loading Management Console…</p>
-        <style>{`
-          .admin-loader {
-            width: 80px;
-            height: 80px;
-            border: 6px solid rgba(99, 102, 241, 0.1);
-            border-top-color: #6366f1;
-            border-radius: 50%;
-            animation: admin-spin 1s ease-in-out infinite;
-            box-shadow: 0 15px 30px -10px rgba(99, 102, 241, 0.3);
-          }
-          @keyframes admin-spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+        <p style={styles.loaderText}>Accessing Admin Console...</p>
       </div>
     );
   }
 
   return (
     <div style={styles.page}>
+      {/* Dynamic Background Blobs */}
       <div style={styles.backgroundBlobs}>
         <div style={styles.blob1}></div>
         <div style={styles.blob2}></div>
         <div style={styles.blob3}></div>
       </div>
 
+      {/* Notification Toasts */}
       <div style={styles.notificationContainer}>
         {notifications.map(n => (
           <div
             key={n.id}
             style={{
               ...styles.notification,
-              backgroundColor: n.type === 'success' ? '#22c55e' : '#ef4444',
+              backgroundColor: n.type === 'success' ? '#10b981' : '#ef4444',
             }}
           >
-            {n.message}
+            {n.type === 'success' ? '✅' : '⚠️'} {n.message}
           </div>
         ))}
       </div>
 
       <div style={styles.container}>
         <header style={styles.header}>
-          <h1 style={styles.title}>
-            Management <span style={styles.gradient}>Console</span>
-          </h1>
-
           <div style={styles.searchWrapper}>
             <span style={styles.searchIcon}>🔍</span>
             <input
               type="text"
-              placeholder="Search by name, email, or location..."
+              placeholder="Search by name, email, or city..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={styles.searchInput}
@@ -132,30 +125,36 @@ export default function Admin() {
           </div>
         </header>
 
+        {/* Stats Grid */}
         <div style={styles.statsGrid}>
           <div style={{...styles.statCard, borderBottomColor: '#6366f1'}}>
-            <span style={styles.statIcon}>📊</span>
+            <span style={styles.statIcon}>👥</span>
             <div>
-              <p style={styles.statLabel}>Total Professionals</p>
+              <p style={styles.statLabel}>Total Network</p>
               <p style={styles.statValue}>{totalPros}</p>
             </div>
           </div>
-          <div style={{...styles.statCard, borderBottomColor: '#22c55e'}}>
-            <span style={styles.statIcon}>✅</span>
+          <div style={{...styles.statCard, borderBottomColor: '#10b981'}}>
+            <span style={styles.statIcon}>🛡️</span>
             <div>
-              <p style={styles.statLabel}>Verified</p>
+              <p style={styles.statLabel}>Verified Pros</p>
               <p style={styles.statValue}>{verifiedCount}</p>
             </div>
           </div>
-          <div style={{...styles.statCard, borderBottomColor: '#f59e0b'}}>
+          <div style={{
+            ...styles.statCard, 
+            borderBottomColor: '#f59e0b',
+            background: pendingCount > 0 ? '#fffbeb' : '#fff' 
+          }}>
             <span style={styles.statIcon}>⏳</span>
             <div>
-              <p style={styles.statLabel}>Pending Review</p>
+              <p style={styles.statLabel}>Awaiting Verification</p>
               <p style={styles.statValue}>{pendingCount}</p>
             </div>
           </div>
         </div>
 
+        {/* Main Grid */}
         <section>
           {filteredPros.length > 0 ? (
             <div style={styles.proGrid}>
@@ -168,8 +167,8 @@ export default function Admin() {
           ) : (
             <div style={styles.emptyState}>
               <span style={styles.emptyIcon}>🔎</span>
-              <p style={styles.emptyText}>No professionals match your search</p>
-              <p style={styles.emptySubtext}>Try different keywords or clear the filter</p>
+              <p style={styles.emptyText}>No matches found</p>
+              <button onClick={() => setSearchTerm('')} style={styles.clearBtn}>Clear Search</button>
             </div>
           )}
         </section>
@@ -177,17 +176,22 @@ export default function Admin() {
 
       <style>{`
         @keyframes float {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-20px) scale(1.05); }
-        }
-        @keyframes pulse-glow {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 1; }
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
         }
         @keyframes slideIn {
-          from { transform: translateX(100%); opacity: 0; }
+          from { transform: translateX(50px); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
         }
+        .admin-loader {
+          width: 60px;
+          height: 60px;
+          border: 5px solid #f1f5f9;
+          border-top-color: #6366f1;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
@@ -197,171 +201,96 @@ const styles = {
   page: {
     position: 'relative',
     minHeight: '100vh',
-    background: 'linear-gradient(145deg, #f1f5f9 0%, #f8fafc 100%)',
-    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+    background: '#f8fafc',
+    overflowX: 'hidden',
   },
   container: {
-    maxWidth: '1280px',
+    maxWidth: '1200px',
     margin: '0 auto',
-    padding: '40px 24px 80px',
+    padding: '60px 20px',
     position: 'relative',
     zIndex: 2,
   },
   backgroundBlobs: {
     position: 'absolute',
     inset: 0,
-    overflow: 'hidden',
     zIndex: 0,
   },
   blob1: {
     position: 'absolute',
-    top: '-120px',
-    left: '-80px',
-    width: '500px',
-    height: '500px',
+    top: '-10%',
+    left: '-5%',
+    width: '40%',
+    height: '40%',
+    background: 'rgba(99, 102, 241, 0.08)',
+    filter: 'blur(100px)',
     borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, rgba(99,102,241,0) 70%)',
-    filter: 'blur(80px)',
-    animation: 'float 18s ease-in-out infinite',
+    animation: 'float 10s infinite alternate',
   },
   blob2: {
     position: 'absolute',
-    bottom: '-150px',
-    right: '-100px',
-    width: '550px',
-    height: '550px',
+    bottom: '0',
+    right: '-5%',
+    width: '30%',
+    height: '40%',
+    background: 'rgba(236, 72, 153, 0.05)',
+    filter: 'blur(100px)',
     borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(236,72,153,0.15) 0%, rgba(236,72,153,0) 70%)',
-    filter: 'blur(90px)',
-    animation: 'float 22s ease-in-out infinite reverse',
   },
-  blob3: {
-    position: 'absolute',
-    top: '40%',
-    left: '50%',
-    width: '400px',
-    height: '400px',
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0) 70%)',
-    filter: 'blur(70px)',
-    animation: 'pulse-glow 12s ease-in-out infinite',
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '40px',
-    position: 'relative',
-  },
-  title: {
-    fontSize: 'clamp(2.2rem, 5vw, 3.5rem)',
-    fontWeight: '900',
-    margin: '0 0 16px',
-    color: '#0f172a',
-  },
+  header: { textAlign: 'center', marginBottom: '60px' },
+  title: { fontSize: '2.5rem', fontWeight: '900', color: '#0f172a', marginBottom: '20px' },
   gradient: {
-    background: 'linear-gradient(135deg, #4f46e5, #ec4899)',
+    background: 'linear-gradient(90deg, #6366f1, #ec4899)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
   },
-  searchWrapper: {
-    maxWidth: '600px',
-    margin: '0 auto',
-    position: 'relative',
-  },
-  searchIcon: {
-    position: 'absolute',
-    left: '20px',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    fontSize: '1.3rem',
-    opacity: 0.6,
-    zIndex: 1,
-  },
+  searchWrapper: { position: 'relative', maxWidth: '500px', margin: '0 auto' },
+  searchIcon: { position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 },
   searchInput: {
     width: '100%',
-    padding: '18px 24px 18px 58px',
-    fontSize: '1.1rem',
-    borderRadius: '60px',
-    border: '2px solid rgba(226,232,240,0.6)',
-    background: 'rgba(255,255,255,0.85)',
-    backdropFilter: 'blur(10px)',
-    boxShadow: '0 15px 30px -12px rgba(0,0,0,0.1)',
+    padding: '16px 20px 16px 50px',
+    borderRadius: '100px',
+    border: '1px solid #e2e8f0',
+    fontSize: '1rem',
     outline: 'none',
-    transition: 'all 0.2s ease',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
   },
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-    gap: '20px',
-    marginBottom: '40px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: '24px',
+    marginBottom: '50px',
   },
   statCard: {
-    background: '#ffffff',
-    borderRadius: '28px',
-    padding: '20px 24px',
+    background: '#fff',
+    padding: '24px',
+    borderRadius: '24px',
     display: 'flex',
     alignItems: 'center',
-    gap: '18px',
-    borderBottom: '4px solid',
-    boxShadow: '0 15px 30px -12px rgba(0,0,0,0.1)',
+    gap: '20px',
+    boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)',
+    borderBottom: '4px solid #6366f1',
+    transition: 'transform 0.3s ease',
   },
-  statIcon: {
-    fontSize: '2.2rem',
-  },
-  statLabel: {
-    margin: 0,
-    fontSize: '0.9rem',
-    color: '#64748b',
-    fontWeight: '500',
-  },
-  statValue: {
-    margin: '4px 0 0',
-    fontSize: '2rem',
-    fontWeight: '800',
-    color: '#0f172a',
-  },
+  statIcon: { fontSize: '32px' },
+  statLabel: { margin: 0, color: '#64748b', fontSize: '0.9rem', fontWeight: '600' },
+  statValue: { margin: 0, fontSize: '1.8rem', fontWeight: '900', color: '#0f172a' },
   proGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: '28px',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+    gap: '24px',
   },
-  cardWrapper: {
-    width: '100%',
-  },
-  emptyState: {
-    textAlign: 'center',
-    padding: '60px 20px',
-    background: 'rgba(255,255,255,0.6)',
-    backdropFilter: 'blur(8px)',
-    borderRadius: '48px',
-    border: '1px solid rgba(226,232,240,0.6)',
-  },
-  emptyIcon: {
-    fontSize: '4rem',
-    marginBottom: '20px',
-    opacity: 0.6,
-  },
-  emptyText: {
-    fontSize: '1.4rem',
-    fontWeight: '600',
-    color: '#334155',
-  },
-  emptySubtext: {
-    fontSize: '1rem',
-    color: '#64748b',
-  },
-  loaderContainer: {
-    height: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'linear-gradient(145deg, #f1f5f9, #f8fafc)',
-  },
-  loaderText: {
-    marginTop: '24px',
-    fontSize: '1.2rem',
-    color: '#1e293b',
-    fontWeight: '500',
+  emptyState: { textAlign: 'center', padding: '100px 0' },
+  emptyIcon: { fontSize: '50px', display: 'block', marginBottom: '20px' },
+  emptyText: { color: '#64748b', fontSize: '1.2rem', fontWeight: '500' },
+  clearBtn: {
+    marginTop: '15px',
+    background: '#6366f1',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 20px',
+    borderRadius: '10px',
+    cursor: 'pointer',
   },
   notificationContainer: {
     position: 'fixed',
@@ -373,11 +302,13 @@ const styles = {
     gap: '10px',
   },
   notification: {
-    padding: '12px 24px',
-    borderRadius: '8px',
+    padding: '16px 24px',
+    borderRadius: '16px',
     color: '#fff',
-    fontWeight: '500',
-    boxShadow: '0 10px 20px -8px rgba(0,0,0,0.2)',
-    animation: 'slideIn 0.3s ease',
+    fontWeight: '700',
+    fontSize: '0.9rem',
+    boxShadow: '0 20px 40px -10px rgba(0,0,0,0.2)',
+    animation: 'slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
   },
+  loaderContainer: { height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px' },
 };
