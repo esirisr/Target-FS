@@ -29,7 +29,7 @@ export default function ProCard({
     ? Number(data.rating).toFixed(1)
     : "0.0";
 
-  // ⭐ RATE
+  // RATE
   const handleRate = async (val) => {
     try {
       const token = localStorage.getItem('token');
@@ -48,14 +48,14 @@ export default function ProCard({
     }
   };
 
-  // 💼 HIRE
+  // HIRE
   const handleHire = async () => {
     const hasPending = userBookings.some(
       b => b.professional?._id === data._id && b.status === 'pending'
     );
 
     if (hasPending) {
-      return alert(`You already ordered a ${displaySkills.split(',')[0].toLowerCase()}!`);
+      return alert(`You already ordered this service!`);
     }
 
     try {
@@ -74,49 +74,31 @@ export default function ProCard({
       onAction && onAction();
 
     } catch (err) {
-      const msg = err.response?.data?.message || "";
-      alert(msg.includes("limit")
-        ? `Daily limit reached.`
-        : "Booking failed."
-      );
+      alert("Booking failed.");
     } finally {
       setIsBooking(false);
     }
   };
 
   return (
-    <div
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        ...styles.card,
-        transform: isHovered ? 'translateY(-8px)' : 'translateY(0)',
-        boxShadow: isHovered
-          ? '0 20px 30px -10px rgba(79,70,229,0.2), 0 8px 15px rgba(0,0,0,0.1)'
-          : '0 10px 25px -5px rgba(0,0,0,0.05), 0 5px 10px -5px rgba(0,0,0,0.02)',
-      }}
-    >
+    <div style={styles.card}>
 
-      {/* STATUS BADGE */}
       <div style={styles.statusBadge}>
         <span style={styles.statusDot}>●</span> Active & Verified
       </div>
 
-      {/* NAME */}
       <h3 style={styles.name}>{displayName}</h3>
 
-      {/* SKILLS */}
       <div style={styles.skillTag}>
         {displaySkills}
       </div>
 
-      {/* INFO SECTION */}
       <div style={styles.infoSection}>
         <div style={styles.infoItem}>
-          📍 {data.location || "Laascaanood"}
+          📍 {data.location || "Unknown"}
         </div>
 
-        {/* PHONE only for pro or admin */}
+        {/* PHONE ONLY FOR PRO OR ADMIN */}
         {(role === 'pro' || role === 'admin') && data.phone && (
           <div style={styles.infoItem}>
             📞 {data.phone}
@@ -132,28 +114,19 @@ export default function ProCard({
         </div>
       </div>
 
-      {/* HIRE BUTTON */}
       <button
         onClick={handleHire}
         disabled={isBooking || data.dailyRequestCount >= 3}
-        style={{
-          ...styles.hireButton,
-          opacity: (isBooking || data.dailyRequestCount >= 3) ? 0.7 : 1,
-          cursor: (isBooking || data.dailyRequestCount >= 3)
-            ? 'not-allowed'
-            : 'pointer',
-        }}
-        className="hire-button"
+        style={styles.hireButton}
       >
         {data.dailyRequestCount >= 3
           ? 'Daily Limit Reached'
           : (isBooking ? 'Sending...' : 'Hire Now')}
       </button>
 
-      {/* RATING */}
       <div style={styles.ratingSection}>
         <div style={styles.starRow}>
-          {[1, 2, 3, 4, 5].map((s) => (
+          {[1,2,3,4,5].map((s) => (
             <span
               key={s}
               onMouseEnter={() => canRate && setHoverStar(s)}
@@ -161,9 +134,7 @@ export default function ProCard({
               onClick={() => canRate && handleRate(s)}
               style={{
                 ...styles.star,
-                color: s <= (hoverStar || data.rating)
-                  ? '#f59e0b'
-                  : '#e2e8f0',
+                color: s <= (hoverStar || data.rating) ? '#f59e0b' : '#e2e8f0',
                 transform: hoverStar === s ? 'scale(1.3)' : 'scale(1)',
                 cursor: canRate ? 'pointer' : 'default',
               }}
@@ -179,28 +150,6 @@ export default function ProCard({
           </div>
         )}
       </div>
-
-      {/* BUTTON STYLES */}
-      <style>{`
-        .hire-button {
-          transition: all 0.3s ease;
-          background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-          border: none;
-          color: white;
-          font-weight: 700;
-          padding: 14px;
-          border-radius: 40px;
-          width: 100%;
-          font-size: 1rem;
-          box-shadow: 0 8px 15px -5px rgba(79,70,229,0.3);
-        }
-        .hire-button:hover:not(:disabled) {
-          transform: scale(1.02);
-          box-shadow: 0 12px 20px -8px rgba(79,70,229,0.5);
-          background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
-        }
-      `}</style>
-
     </div>
   );
 }
@@ -211,76 +160,31 @@ const styles = {
     borderRadius: '24px',
     padding: '24px 20px',
     width: '320px',
-    border: '1px solid rgba(226, 232, 240, 0.6)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
+    border: '1px solid #e2e8f0',
     textAlign: 'center',
-    transition: 'all 0.3s ease',
-    position: 'relative',
   },
   statusBadge: {
-    background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)',
+    background: '#dcfce7',
     color: '#166534',
-    fontWeight: '700',
-    fontSize: '14px',
     padding: '6px 16px',
     borderRadius: '40px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    marginBottom: '16px',
+    marginBottom: '12px',
   },
-  statusDot: {
-    fontSize: '18px',
-  },
-  name: {
-    fontSize: '1.8rem',
-    fontWeight: '800',
-    marginBottom: '8px',
-  },
-  skillTag: {
-    background: 'linear-gradient(90deg, #4f46e5, #6366f1)',
-    color: 'white',
-    padding: '6px 16px',
-    borderRadius: '40px',
-    fontWeight: '600',
-    fontSize: '14px',
-    marginBottom: '20px',
-  },
-  infoSection: {
-    width: '100%',
-    marginBottom: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    fontSize: '14px',
-  },
-  infoItem: {
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '6px',
-  },
+  statusDot: { fontSize: '18px' },
+  name: { fontSize: '1.8rem', fontWeight: '800' },
+  skillTag: { marginBottom: '12px', color: '#4f46e5' },
+  infoSection: { marginBottom: '12px' },
+  infoItem: { marginBottom: '6px' },
   hireButton: {
     width: '100%',
-    marginBottom: '16px',
+    padding: '12px',
+    borderRadius: '40px',
+    background: '#4f46e5',
+    color: 'white',
+    border: 'none',
   },
-  ratingSection: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  starRow: {
-    display: 'flex',
-    gap: '4px',
-  },
-  star: {
-    fontSize: '28px',
-    transition: 'all 0.2s ease',
-  },
-  rateNowText: {
-    fontSize: '13px',
-    color: '#10b981',
-    fontWeight: '700',
-  },
+  ratingSection: { marginTop: '12px' },
+  starRow: { display: 'flex', justifyContent: 'center', gap: '4px' },
+  star: { fontSize: '28px' },
+  rateNowText: { fontSize: '13px', color: '#10b981' },
 };
