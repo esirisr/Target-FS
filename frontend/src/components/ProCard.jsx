@@ -55,7 +55,7 @@ export default function ProCard({
     );
 
     if (hasPending) {
-      return alert(`You already ordered this service!`);
+      return alert(`You already requested this service!`);
     }
 
     try {
@@ -98,7 +98,7 @@ export default function ProCard({
           📍 {data.location || "Unknown"}
         </div>
 
-        {/* PHONE ONLY FOR PRO OR ADMIN */}
+        {/* PHONE ONLY FOR PRO/ADMIN */}
         {(role === 'pro' || role === 'admin') && data.phone && (
           <div style={styles.infoItem}>
             📞 {data.phone}
