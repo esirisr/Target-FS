@@ -16,7 +16,7 @@ export default function ProDashboard() {
       setBookings(bookingsRes.data.bookings || []);
       setUser(profileRes.data);
     } catch (err) {
-      console.error('Error fetching dashboard data:', err.message);
+      console.error('Error fetching dashboard:', err.message);
     } finally {
       setLoading(false);
     }
@@ -28,256 +28,247 @@ export default function ProDashboard() {
 
   const handleStatusUpdate = async (bookingId, newStatus) => {
     try {
-      await API.patch('/bookings/update-status', {
-        bookingId,
-        status: newStatus,
-      });
+      await API.patch('/bookings/update-status', { bookingId, status: newStatus });
       fetchData();
     } catch (err) {
       alert('Failed to update status');
     }
   };
 
-  /* ===========================
-     🔥 LOCATION FILTER (KEY PART)
-  ============================ */
-
-  const sameLocationBookings = bookings.filter(
-    (req) =>
-      req.client?.location?.toLowerCase() ===
-      user?.location?.toLowerCase()
-  );
-
-  /* ===========================
-     📊 STATS (BASED ON FILTERED)
-  ============================ */
-
-  const totalBookings = sameLocationBookings.length;
-  const pendingCount = sameLocationBookings.filter(
-    (b) => b.status === 'pending'
-  ).length;
-  const approvedCount = sameLocationBookings.filter(
-    (b) => b.status === 'approved'
-  ).length;
-  const rejectedCount = sameLocationBookings.filter(
-    (b) => b.status === 'rejected'
-  ).length;
+  const totalBookings = bookings.length;
+  const pendingCount = bookings.filter(b => b.status === 'pending').length;
+  const approvedCount = bookings.filter(b => b.status === 'approved').length;
+  const rejectedCount = bookings.filter(b => b.status === 'rejected').length;
 
   if (loading) {
     return (
       <div style={styles.loaderContainer}>
         <div className="loader-spinner"></div>
         <p style={styles.loaderText}>Preparing your workspace…</p>
+        <style>{`
+          .loader-spinner {
+            width: 70px;
+            height: 70px;
+            border: 5px solid rgba(99, 102, 241, 0.1);
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: loader-spin 0.8s ease-in-out infinite;
+          }
+          @keyframes loader-spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
 
-  const isVerified =
-    user?.isVerified === true || user?.status === 'approved';
+  const isVerified = user?.isVerified === true || user?.status === 'approved';
 
   return (
     <div style={styles.page}>
       <div style={styles.container}>
-        {/* Stats */}
+
         <div style={styles.statsGrid}>
-          <StatCard icon="📋" label="Total Requests" value={totalBookings} />
-          <StatCard icon="⏳" label="Pending" value={pendingCount} />
-          <StatCard icon="✅" label="Approved" value={approvedCount} />
-          <StatCard icon="❌" label="Rejected" value={rejectedCount} />
-        </div>
-
-        {/* Requests */}
-        <div style={styles.mainCard}>
-          <h3 style={styles.sectionTitle}>📬 Incoming Requests</h3>
-
-          {sameLocationBookings.length > 0 ? (
-            sameLocationBookings.map((req) => (
-              <div
-                key={req._id}
-                style={{
-                  ...styles.bookingCard,
-                  borderLeftColor: statusColor(req.status),
-                }}
-              >
-                <div style={styles.bookingHeader}>
-                  <span
-                    style={styles.badge(statusColor(req.status))}
-                  >
-                    {req.status.toUpperCase()}
-                  </span>
-                  <span style={styles.bookingDate}>
-                    {new Date(req.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-
-                <div style={styles.clientDetails}>
-                  <p>
-                    👤 {capitalize(req.client?.name) || 'Client'}
-                  </p>
-                  <p>📧 {req.client?.email || 'N/A'}</p>
-                  <p>📞 {req.client?.phone || 'N/A'}</p>
-                  <p>
-                    📍 {capitalize(req.client?.location) || 'N/A'}
-                  </p>
-                </div>
-
-                {req.status === 'pending' && isVerified && (
-                  <div style={styles.actions}>
-                    <button
-                      style={styles.acceptBtn}
-                      onClick={() =>
-                        handleStatusUpdate(req._id, 'approved')
-                      }
-                    >
-                      Accept
-                    </button>
-                    <button
-                      style={styles.rejectBtn}
-                      onClick={() =>
-                        handleStatusUpdate(req._id, 'rejected')
-                      }
-                    >
-                      Reject
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))
-          ) : (
-            <div style={styles.empty}>
-              No same-location requests found.
+          <div style={styles.statCard}>
+            <span style={styles.statIcon}>📋</span>
+            <div>
+              <p style={styles.statLabel}>Total Requests</p>
+              <p style={styles.statValue}>{totalBookings}</p>
             </div>
-          )}
+          </div>
+          <div style={{ ...styles.statCard, borderBottomColor: '#f59e0b' }}>
+            <span style={styles.statIcon}>⏳</span>
+            <div>
+              <p style={styles.statLabel}>Pending</p>
+              <p style={styles.statValue}>{pendingCount}</p>
+            </div>
+          </div>
+          <div style={{ ...styles.statCard, borderBottomColor: '#22c55e' }}>
+            <span style={styles.statIcon}>✅</span>
+            <div>
+              <p style={styles.statLabel}>Approved</p>
+              <p style={styles.statValue}>{approvedCount}</p>
+            </div>
+          </div>
+          <div style={{ ...styles.statCard, borderBottomColor: '#ef4444' }}>
+            <span style={styles.statIcon}>❌</span>
+            <div>
+              <p style={styles.statLabel}>Rejected</p>
+              <p style={styles.statValue}>{rejectedCount}</p>
+            </div>
+          </div>
+        </div>
+
+        <div style={styles.grid}>
+          <section style={styles.mainCard}>
+            <h3 style={styles.sectionTitle}>📬 Incoming Requests</h3>
+
+            {bookings.length > 0 ? (
+              bookings.map((req) => (
+                <div
+                  key={req._id}
+                  style={{
+                    ...styles.bookingCard,
+                    borderLeftColor: statusColor(req.status),
+                  }}
+                  className="booking-card"
+                >
+                  <div style={styles.bookingHeader}>
+                    <span style={styles.bookingStatusBadge(statusColor(req.status))}>
+                      {req.status.toUpperCase()}
+                    </span>
+                    <span style={styles.bookingDate}>
+                      {new Date(req.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <div style={styles.bookingContent}>
+                    <div style={styles.clientDetails}>
+                      <p style={styles.clientName}>👤 {req.client?.name || 'Client'}</p>
+                      <p style={styles.clientInfo}>📧 {req.client?.email || 'N/A'}</p>
+                      <p style={styles.clientInfo}>
+                        📞{' '}
+                        {req.client?.phone ? (
+                          <a href={`tel:${req.client.phone}`} style={styles.link}>
+                            {req.client.phone}
+                          </a>
+                        ) : 'N/A'}
+                      </p>
+                      <p style={styles.clientInfo}>📍 {req.client?.location || 'N/A'}</p>
+                    </div>
+
+                    {req.status === 'pending' && isVerified && (
+                      <div style={styles.actions}>
+                        <button
+                          onClick={() => handleStatusUpdate(req._id, 'approved')}
+                          style={styles.actionBtn}
+                        >
+                          ✓ Accept
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate(req._id, 'rejected')}
+                          style={styles.actionBtn}
+                        >
+                          ✕ Reject
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={styles.emptyState}>
+                <p>No requests yet</p>
+              </div>
+            )}
+          </section>
         </div>
       </div>
     </div>
   );
 }
 
-/* ===========================
-   🧩 Small Components
-=========================== */
+// helpers
+const statusColor = (status) =>
+  status === 'approved' ? '#22c55e' :
+  status === 'rejected' ? '#ef4444' :
+  '#f59e0b';
 
-function StatCard({ icon, label, value }) {
-  return (
-    <div style={styles.statCard}>
-      <span style={{ fontSize: 28 }}>{icon}</span>
-      <div>
-        <p style={{ margin: 0, fontSize: 14 }}>{label}</p>
-        <h2 style={{ margin: 0 }}>{value}</h2>
-      </div>
-    </div>
-  );
-}
-
-/* ===========================
-   🛠 Helpers
-=========================== */
-
-const statusColor = (status) => {
-  if (status === 'approved') return '#22c55e';
-  if (status === 'rejected') return '#ef4444';
-  return '#f59e0b';
-};
-
-const capitalize = (text) =>
-  text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
-
-/* ===========================
-   🎨 Styles
-=========================== */
-
+// styles (fully functional — no function-style style bug)
 const styles = {
   page: {
+    position: 'relative',
     minHeight: '100vh',
-    background: '#f1f5f9',
-    padding: 40,
-    fontFamily: 'Inter, sans-serif',
+    background: 'linear-gradient(145deg, #f1f5f9 0%, #f8fafc 100%)',
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
   },
   container: {
-    maxWidth: 1100,
+    maxWidth: '1280px',
     margin: '0 auto',
+    padding: '40px 24px 80px',
   },
   statsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-    gap: 20,
-    marginBottom: 30,
+    gap: '20px',
+    marginBottom: '40px',
   },
   statCard: {
-    background: '#fff',
-    padding: 20,
-    borderRadius: 20,
+    background: '#ffffff',
+    borderRadius: '28px',
+    padding: '20px 24px',
     display: 'flex',
-    gap: 15,
     alignItems: 'center',
+    gap: '18px',
+    borderBottom: '4px solid #6366f1',
+    boxShadow: '0 15px 30px -12px rgba(0,0,0,0.1)',
+  },
+  statIcon: { fontSize: '2.2rem' },
+  statLabel: { margin: 0, fontSize: '0.9rem', color: '#64748b' },
+  statValue: { margin: '4px 0 0', fontSize: '2rem', fontWeight: '800' },
+
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 340px',
+    gap: '28px',
   },
   mainCard: {
     background: '#fff',
-    padding: 30,
-    borderRadius: 25,
+    borderRadius: '32px',
+    padding: '28px',
+    boxShadow: '0 20px 40px -12px rgba(0,0,0,0.1)',
   },
-  sectionTitle: {
-    marginBottom: 20,
-  },
+  sectionTitle: { fontSize: '1.4rem', marginBottom: '20px' },
+
   bookingCard: {
+    background: '#fff',
+    padding: '18px',
+    borderRadius: '20px',
     borderLeft: '6px solid',
-    padding: 20,
-    marginBottom: 15,
-    borderRadius: 20,
-    background: '#fafafa',
+    marginBottom: '14px',
+    boxShadow: '0 8px 18px -6px rgba(0,0,0,0.06)',
   },
+
   bookingHeader: {
     display: 'flex',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: '12px',
   },
-  badge: (color) => ({
+
+  bookingStatusBadge: (color) => ({
     background: color + '20',
     color: color,
     padding: '4px 12px',
-    borderRadius: 20,
-    fontWeight: 600,
+    borderRadius: '40px',
+    fontSize: '0.75rem',
+    fontWeight: '700',
   }),
-  bookingDate: {
-    fontSize: 12,
-    color: '#777',
-  },
-  clientDetails: {
-    marginBottom: 10,
-  },
-  actions: {
-    display: 'flex',
-    gap: 10,
-  },
-  acceptBtn: {
-    background: '#22c55e',
-    color: '#fff',
-    border: 'none',
+
+  bookingDate: { fontSize: '0.8rem', color: '#94a3b8' },
+
+  clientDetails: { flex: 1 },
+  clientName: { margin: '0 0 8px', fontWeight: '600' },
+  clientInfo: { margin: '4px 0', color: '#334155' },
+
+  actions: { display: 'flex', gap: '10px' },
+
+  actionBtn: {
     padding: '8px 16px',
-    borderRadius: 20,
-    cursor: 'pointer',
-  },
-  rejectBtn: {
-    background: '#ef4444',
-    color: '#fff',
+    borderRadius: '24px',
     border: 'none',
-    padding: '8px 16px',
-    borderRadius: 20,
+    fontWeight: '600',
     cursor: 'pointer',
+    background: '#f1f5f9',
   },
-  empty: {
-    padding: 20,
-    textAlign: 'center',
-    color: '#777',
-  },
+
+  emptyState: { textAlign: 'center', padding: '40px' },
+
   loaderContainer: {
     height: '100vh',
     display: 'flex',
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  loaderText: {
-    marginTop: 20,
-  },
+  loaderText: { marginTop: '16px' },
+  link: { color: '#2563eb', textDecoration: 'underline' },
 };
