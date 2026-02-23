@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import API from '../services/api';
 
-export default function ProCard({ pro, onAction, userBookings = [], onNotify }) {
+export default function ProCard({ pro, onAction, userBookings = [], onNotify, selectedSkill }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [hoverStar, setHoverStar] = useState(0);
 
+  // Normalizing data to handle both direct pro objects and nested professional objects
   const data = pro.professional || pro;
   const displayName = data.name || "Professional";
 
+  // Check if this specific professional has an accepted booking that needs a rating
   const bookingToRate = userBookings.find(b =>
     b.professional?._id === data._id &&
     (b.status === 'approved' || b.status === 'accepted') &&
@@ -32,8 +34,8 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify }) 
   };
 
   const handleHire = async () => {
+    // Prevent spam: Check if a request was sent in the last 2 hours
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-
     const hasRecentPending = userBookings.some(b =>
       b.professional?._id === data._id &&
       b.status === 'pending' &&
@@ -41,10 +43,7 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify }) 
     );
 
     if (hasRecentPending) {
-      onNotify(
-        'You already have a pending request for this professional (submitted within the last 2 hours).',
-        'error'
-      );
+      onNotify('You already have a pending request for this pro submitted recently.', 'error');
       return;
     }
 
@@ -56,27 +55,29 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify }) 
       }
 
       setIsBooking(true);
-      await API.post('/bookings/create', { proId: data._id });
 
-      onNotify('Hiring request sent successfully!', 'success');
-      onAction();
+      // --- THE FIX: CATEGORY LOGIC ---
+      // If the user is filtering by "Plumber", we send "Plumber".
+      // If "All" is selected, we send the Pro's first skill from the DB (e.g., "Carpenter").
+      const bookingCategory = (selectedSkill && selectedSkill !== "All") 
+        ? selectedSkill 
+        : (data.skills && data.skills[0]) || 'General Service';
+
+      await API.post('/bookings/create', { 
+        proId: data._id,
+        category: bookingCategory // This ensures "General" is overwritten
+      });
+
+      onNotify(`${bookingCategory} request sent successfully!`, 'success');
+      onAction(); // Triggers ClientHome to refresh the sidebar
     } catch (err) {
-      const msg = err.response?.data?.message || "";
-
-      if (msg.includes("limit")) {
-        onNotify('Daily limit reached for this professional.', 'error');
-      } else {
-        onNotify(
-          err.response?.data?.message || 'Booking failed. Please try again.',
-          'error'
-        );
-      }
+      const msg = err.response?.data?.message || "Booking failed.";
+      onNotify(msg, 'error');
     } finally {
       setIsBooking(false);
     }
   };
 
-  // ✅ Removed built-in plumber fallback
   const skills = Array.isArray(data.skills) ? data.skills : [];
 
   return (
@@ -97,37 +98,18 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify }) 
 
       <h3 style={styles.name}>{displayName}</h3>
 
-      {skills.length > 0 && (
-        <div style={styles.skillContainer}>
-          {skills.map((skill, index) => {
-            let skillName;
-            if (typeof skill === 'object' && skill !== null) {
-              skillName =
-                skill.name ||
-                skill.skill ||
-                skill.title ||
-                skill.value ||
-                String(skill);
-            } else {
-              skillName = String(skill);
-            }
-
-            return (
-              <span key={index} style={styles.skillBadge}>
-                {skillName}
-              </span>
-            );
-          })}
-        </div>
-      )}
+      <div style={styles.skillContainer}>
+        {skills.map((skill, index) => (
+          <span key={index} style={styles.skillBadge}>
+            {typeof skill === 'object' ? (skill.name || skill.title) : String(skill)}
+          </span>
+        ))}
+      </div>
 
       <div style={styles.infoSection}>
         <div style={styles.infoItem}>📍 {data.location || "N/A"}</div>
         <div style={styles.infoItem}>📞 {data.phone || "N/A"}</div>
-        <div style={styles.infoItem}>✉️ {data.email || "N/A"}</div>
-        <div style={styles.infoItem}>
-          ⭐ {averageRating} ({data.reviewCount || 0} reviews)
-        </div>
+        <div style={styles.infoItem}>⭐ {averageRating} ({data.reviewCount || 0} reviews)</div>
       </div>
 
       <button
@@ -136,18 +118,11 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify }) 
         style={{
           ...styles.hireButton,
           opacity: (isBooking || data.dailyRequestCount >= 3) ? 0.7 : 1,
-          cursor:
-            (isBooking || data.dailyRequestCount >= 3)
-              ? 'not-allowed'
-              : 'pointer',
+          cursor: (isBooking || data.dailyRequestCount >= 3) ? 'not-allowed' : 'pointer',
         }}
         className="hire-button"
       >
-        {data.dailyRequestCount >= 3
-          ? 'Daily Limit Reached'
-          : isBooking
-          ? 'Sending...'
-          : 'Hire Now'}
+        {data.dailyRequestCount >= 3 ? 'Limit Reached' : isBooking ? 'Sending...' : 'Hire Now'}
       </button>
 
       <div style={styles.ratingSection}>
@@ -160,12 +135,8 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify }) 
               onClick={() => canRate && handleRate(s)}
               style={{
                 ...styles.star,
-                color:
-                  s <= (hoverStar || data.rating)
-                    ? '#f59e0b'
-                    : '#e2e8f0',
-                transform:
-                  hoverStar === s ? 'scale(1.3)' : 'scale(1)',
+                color: s <= (hoverStar || 0) ? '#f59e0b' : '#e2e8f0',
+                transform: hoverStar === s ? 'scale(1.2)' : 'scale(1)',
                 cursor: canRate ? 'pointer' : 'default',
               }}
             >
@@ -173,12 +144,7 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify }) 
             </span>
           ))}
         </div>
-
-        {canRate && (
-          <div style={styles.rateNowText}>
-            Please rate this professional!
-          </div>
-        )}
+        {canRate && <div style={styles.rateNowText}>Please rate your experience!</div>}
       </div>
 
       <style>{`
@@ -192,12 +158,9 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify }) 
           border-radius: 40px;
           width: 100%;
           font-size: 1rem;
-          box-shadow: 0 8px 15px -5px rgba(79,70,229,0.3);
         }
-
         .hire-button:hover:not(:disabled) {
           transform: scale(1.02);
-          box-shadow: 0 12px 20px -8px rgba(79,70,229,0.5);
           background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
         }
       `}</style>
@@ -206,98 +169,17 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify }) 
 }
 
 const styles = {
-  card: {
-    background: 'white',
-    borderRadius: '24px',
-    padding: '24px 20px',
-    width: '320px',
-    border: '1px solid rgba(226, 232, 240, 0.6)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    textAlign: 'center',
-    transition: 'all 0.3s ease',
-    position: 'relative',
-  },
-  statusBadge: {
-    background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)',
-    color: '#166534',
-    fontWeight: '700',
-    fontSize: '14px',
-    padding: '6px 16px',
-    borderRadius: '40px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    marginBottom: '16px',
-    boxShadow: '0 2px 8px rgba(22,101,52,0.2)',
-  },
-  statusDot: {
-    fontSize: '18px',
-    lineHeight: 1,
-  },
-  name: {
-    fontSize: '1.8rem',
-    fontWeight: '800',
-    margin: '0 0 8px 0',
-    color: '#0f172a',
-  },
-  skillContainer: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '6px',
-    justifyContent: 'center',
-    marginBottom: '20px',
-  },
-  skillBadge: {
-    background: 'linear-gradient(90deg, #4f46e5, #6366f1)',
-    color: 'white',
-    padding: '6px 14px',
-    borderRadius: '40px',
-    fontWeight: '600',
-    fontSize: '13px',
-  },
-  infoSection: {
-    width: '100%',
-    marginBottom: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    fontSize: '14px',
-    color: '#334155',
-    fontWeight: '500',
-  },
-  infoItem: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
-  },
-  hireButton: {
-    width: '100%',
-    marginBottom: '16px',
-  },
-  ratingSection: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '4px',
-    width: '100%',
-  },
-  starRow: {
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '4px',
-  },
-  star: {
-    fontSize: '28px',
-    transition: 'all 0.2s ease',
-    padding: '0 2px',
-  },
-  rateNowText: {
-    fontSize: '13px',
-    color: '#10b981',
-    fontWeight: '700',
-    marginTop: '4px',
-  },
+  card: { background: 'white', borderRadius: '24px', padding: '24px 20px', width: '320px', border: '1px solid rgba(226, 232, 240, 0.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all 0.3s ease', position: 'relative' },
+  statusBadge: { background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)', color: '#166534', fontWeight: '700', fontSize: '13px', padding: '6px 16px', borderRadius: '40px', marginBottom: '16px' },
+  statusDot: { marginRight: '5px' },
+  name: { fontSize: '1.6rem', fontWeight: '800', margin: '0 0 8px 0', color: '#0f172a' },
+  skillContainer: { display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', marginBottom: '20px' },
+  skillBadge: { background: '#4f46e5', color: 'white', padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' },
+  infoSection: { width: '100%', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', color: '#334155' },
+  infoItem: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' },
+  hireButton: { width: '100%', marginBottom: '16px' },
+  ratingSection: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' },
+  starRow: { display: 'flex', gap: '4px' },
+  star: { fontSize: '24px', transition: 'all 0.2s' },
+  rateNowText: { fontSize: '12px', color: '#10b981', fontWeight: '700' }
 };

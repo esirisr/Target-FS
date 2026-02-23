@@ -2,18 +2,21 @@ import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+/**
+ * REGISTER
+ */
 export const register = async (req, res) => {
   try {
-    // ✅ Destructure skills from request body
     const { name, email, password, role, location, phone, skills } = req.body;
 
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: "Email exists" });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email exists" });
+    }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // ✅ Include skills in the new user document
     await User.create({
       name,
       email,
@@ -21,32 +24,47 @@ export const register = async (req, res) => {
       role,
       phone,
       location: location ? location.toLowerCase().trim() : 'not specified',
-      skills: skills || [] // ensure skills is an array, default empty
+      skills: skills || []
     });
 
     res.status(201).json({ success: true, message: "User registered" });
+
   } catch (error) {
     res.status(500).json({ message: "Error", error: error.message });
   }
 };
 
+/**
+ * LOGIN
+ * Token expiry is read from .env -> JWT_EXPIRES_IN
+ */
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
     const user = await User.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
+
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      {
+        expiresIn: process.env.JWT_EXPIRES_IN // reads from .env (5m)
+      }
     );
+
     res.json({
       token,
       role: user.role,
-      user: { id: user._id, name: user.name, location: user.location }
+      user: {
+        id: user._id,
+        name: user.name,
+        location: user.location
+      }
     });
+
   } catch (error) {
     res.status(500).json({ message: "Login failed" });
   }

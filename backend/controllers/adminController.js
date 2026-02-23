@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Booking from '../models/Booking.js';
 
 /**
  * GET Dashboard Data with Role & Location Filtering
@@ -8,7 +9,6 @@ export const getAdminDashboardData = async (req, res) => {
     const role = req.user.role;
     const userId = req.user.id;
 
-    // requester (for location)
     const currentUser = await User.findById(userId);
     if (!currentUser) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -16,13 +16,11 @@ export const getAdminDashboardData = async (req, res) => {
 
     const userLocation = currentUser.location?.trim().toLowerCase() || '';
 
-    // all pros (exclude master admin if needed)
     const allPros = await User.find({
       role: 'pro',
       email: { $ne: 'himiloone@gmail.com' }
     }).select('-password').lean();
 
-    // ADMIN VIEW (no filtering)
     if (role === 'admin') {
       return res.json({
         success: true,
@@ -36,7 +34,6 @@ export const getAdminDashboardData = async (req, res) => {
       });
     }
 
-    // CLIENT VIEW (location + privacy)
     const matchedPros = allPros.filter(p => {
       const isVerified = p.isVerified === true || String(p.isVerified) === 'true';
       const isSuspended = p.isSuspended === true || String(p.isSuspended) === 'true';
@@ -48,7 +45,7 @@ export const getAdminDashboardData = async (req, res) => {
         proLocation === userLocation
       );
     }).map(p => {
-      delete p.phone; // hide phone for clients
+      delete p.phone;
       return p;
     });
 
@@ -57,6 +54,45 @@ export const getAdminDashboardData = async (req, res) => {
   } catch (error) {
     console.error("Dashboard Error:", error);
     res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+/**
+ * ANALYTICS DATA
+ */
+export const getAnalytics = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalPros = await User.countDocuments({ role: 'pro' });
+    const verifiedPros = await User.countDocuments({ role: 'pro', isVerified: true });
+    const totalBookings = await Booking.countDocuments();
+
+    const requestsByCategory = await Booking.aggregate([
+      { $group: { _id: '$category', count: { $sum: 1 } } }
+    ]);
+
+    const monthlyBookings = await Booking.aggregate([
+      {
+        $group: {
+          _id: { $month: '$createdAt' },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    res.json({
+      totalUsers,
+      totalPros,
+      verifiedPros,
+      totalBookings,
+      requestsByCategory,
+      monthlyBookings
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Analytics error' });
   }
 };
 

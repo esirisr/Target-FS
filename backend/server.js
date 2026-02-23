@@ -9,6 +9,9 @@ import adminRoutes from './routes/adminRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js'; 
 import userRoutes from './routes/userRoutes.js'; 
 import proRoutes from './routes/proRoutes.js'; // 1. ADD THIS IMPORT
+import analyticsRoutes from './routes/analyticsRoutes.js'; // 1. ADD THIS IMPORT
+
+
 
 dotenv.config();
 const app = express();
@@ -21,6 +24,7 @@ connectDB();
 // Mounting Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/analytics', analyticsRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', userRoutes); 
 app.use('/api/pros', proRoutes); // 2. ADD THIS MOUNTING LINE
