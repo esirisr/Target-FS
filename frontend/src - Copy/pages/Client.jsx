@@ -18,6 +18,8 @@ export default function ClientHome() {
     "Mechanic",
     "Electrician",
     "Carpenter",
+    "Cleaner",
+    "Gardener",
     "Mason"
   ];
 

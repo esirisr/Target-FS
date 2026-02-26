@@ -3,31 +3,44 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 
-// Import Routes
+// Route Imports
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
-import bookingRoutes from './routes/bookingRoutes.js'; 
-import userRoutes from './routes/userRoutes.js'; 
-import proRoutes from './routes/proRoutes.js'; // 1. ADD THIS IMPORT
-import analyticsRoutes from './routes/analyticsRoutes.js'; // 1. ADD THIS IMPORT
-
-
+import analyticsRoutes from './routes/analyticsRoutes.js';
 
 dotenv.config();
 const app = express();
 
-app.use(cors()); 
-app.use(express.json());
-
+// Database
 connectDB();
 
-// Mounting Routes
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Debugging Middleware (Keep this while testing)
+app.use((req, res, next) => {
+  console.log(`📡 ${req.method} request to: ${req.url}`);
+  next();
+});
+
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/admin/analytics', analyticsRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/users', userRoutes); 
-app.use('/api/pros', proRoutes); // 2. ADD THIS MOUNTING LINE
+app.use('/api/analytics', analyticsRoutes); // Mounted at /api/analytics
+
+// Root Route
+app.get('/', (req, res) => {
+  res.json({ message: "API is running..." });
+});
+
+// 404 Handler - MUST be last
+app.use((req, res) => {
+  res.status(404).json({
+    status: "error",
+    message: `Route ${req.originalUrl} not found on this server.`
+  });
+});
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));

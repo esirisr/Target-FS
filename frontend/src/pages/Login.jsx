@@ -144,7 +144,7 @@ const styles = {
   button: {
     width: '100%',
     padding: '12px',
-    background: '#0f172a',
+    background: '#1d4ed8',
     color: '#fff',
     border: 'none',
     borderRadius: '8px',

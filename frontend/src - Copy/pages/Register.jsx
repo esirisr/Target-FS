@@ -242,7 +242,7 @@ export default function Register() {
                 onClick={() => setFormData({ ...formData, role: 'client' })}
                 style={{
                   ...styles.toggleBtn,
-                  backgroundColor: formData.role === 'client' ? '#1d4ed8' : '#f1f5f9',
+                  backgroundColor: formData.role === 'client' ? '#000' : '#f1f5f9',
                   color: formData.role === 'client' ? '#fff' : '#475569'
                 }}
               >
@@ -253,7 +253,7 @@ export default function Register() {
                 onClick={() => setFormData({ ...formData, role: 'pro' })}
                 style={{
                   ...styles.toggleBtn,
-                  backgroundColor: formData.role === 'pro' ? '#1d4ed8' : '#f1f5f9',
+                  backgroundColor: formData.role === 'pro' ? '#000' : '#f1f5f9',
                   color: formData.role === 'pro' ? '#fff' : '#475569'
                 }}
               >
@@ -291,7 +291,7 @@ export default function Register() {
               disabled={loading}
               style={{
                 ...styles.button,
-                backgroundColor: isHovered ? '#108554' : '#1d4ed8'
+                backgroundColor: isHovered ? '#334155' : '#000'
               }}
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}

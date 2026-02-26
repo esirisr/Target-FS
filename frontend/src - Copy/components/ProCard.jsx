@@ -108,7 +108,7 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
 
       <div style={styles.infoSection}>
         <div style={styles.infoItem}>📍 {data.location || "N/A"}</div>
-
+        <div style={styles.infoItem}>📞 {data.phone || "N/A"}</div>
         <div style={styles.infoItem}>⭐ {averageRating} ({data.reviewCount || 0} reviews)</div>
       </div>
 

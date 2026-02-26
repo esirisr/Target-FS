@@ -1,50 +1,46 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import User from '../models/User.js';
+import User from '../models/User.js'; 
+import connectDB from '../config/db.js';
 
+// Fix for __dirname in ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Load .env from the root (backend folder)
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-const createAdmin = async () => {
+const seedAdmin = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI;
-    if (!mongoUri) {
-      console.error("MONGODB_URI missing in .env");
-      process.exit(1);
-    }
+    console.log('Connecting to MongoDB...');
+    await connectDB();
 
-    await mongoose.connect(mongoUri);
-    console.log("MongoDB connected");
+    // 1. Clean up existing admin to avoid duplicates
+    await User.deleteMany({ role: 'admin' });
 
-    const exists = await User.findOne({ email: "admin@homeman.com" });
-    if (exists) {
-      console.log("Admin already exists");
-      process.exit(0);
-    }
-
-    const hashed = await bcrypt.hash("admin123", 10);
-
-    await User.create({
-      name: "Super Admin",
-      email: "admin@homeman.com",
-      password: hashed,
-      role: "admin",
-      location: "hargeisa",
-      skills: []
+    // 2. Create the new Admin
+    const admin = new User({
+      name: 'System Admin',
+      email: 'admin@homeman.com',
+      password: '123456', // The model's middleware usually hashes this
+      role: 'admin',
     });
 
-    console.log("Admin created successfully");
-    process.exit(0);
-
-  } catch (err) {
-    console.error("Seeding error:", err);
+    await admin.save();
+    
+    console.log('-----------------------------------');
+    console.log('✅ Admin user seeded successfully!');
+    console.log('Email: admin@homeman.com');
+    console.log('Password: 123456');
+    console.log('-----------------------------------');
+    
+    process.exit();
+  } catch (error) {
+    console.error('❌ Error seeding admin:', error.message);
     process.exit(1);
   }
 };
 
-createAdmin();
+seedAdmin();
