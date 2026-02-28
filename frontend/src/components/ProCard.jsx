@@ -10,6 +10,14 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
   const data = pro.professional || pro;
   const displayName = data.name || "Professional";
 
+  // Extract initials for avatar
+  const initials = displayName
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
   // Check if this specific professional has an accepted booking that needs a rating
   const bookingToRate = userBookings.find(b =>
     b.professional?._id === data._id &&
@@ -56,20 +64,18 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
 
       setIsBooking(true);
 
-      // --- THE FIX: CATEGORY LOGIC ---
-      // If the user is filtering by "Plumber", we send "Plumber".
-      // If "All" is selected, we send the Pro's first skill from the DB (e.g., "Carpenter").
+      // Category logic
       const bookingCategory = (selectedSkill && selectedSkill !== "All") 
         ? selectedSkill 
         : (data.skills && data.skills[0]) || 'General Service';
 
       await API.post('/bookings/create', { 
         proId: data._id,
-        category: bookingCategory // This ensures "General" is overwritten
+        category: bookingCategory
       });
 
       onNotify(`${bookingCategory} request sent successfully!`, 'success');
-      onAction(); // Triggers ClientHome to refresh the sidebar
+      onAction();
     } catch (err) {
       const msg = err.response?.data?.message || "Booking failed.";
       onNotify(msg, 'error');
@@ -86,47 +92,44 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
       onMouseLeave={() => setIsHovered(false)}
       style={{
         ...styles.card,
-        transform: isHovered ? 'translateY(-8px)' : 'translateY(0)',
+        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
         boxShadow: isHovered
-          ? '0 20px 30px -10px rgba(79,70,229,0.2), 0 8px 15px rgba(0,0,0,0.1)'
-          : '0 10px 25px -5px rgba(0,0,0,0.05), 0 5px 10px -5px rgba(0,0,0,0.02)',
+          ? '0 20px 30px -10px rgba(59,130,246,0.3), 0 10px 20px -5px rgba(0,0,0,0.1)'
+          : '0 10px 20px -8px rgba(0,0,0,0.08), 0 4px 8px -2px rgba(0,0,0,0.02)',
       }}
     >
-      <div style={styles.statusBadge}>
-        <span style={styles.statusDot}>●</span> Active & Verified
+      {/* Decorative top bar */}
+      <div style={styles.cardTopBar} />
+
+      {/* Avatar with verified badge */}
+      <div style={styles.avatarContainer}>
+        <div style={styles.avatar}>
+          <span style={styles.avatarText}>{initials}</span>
+        </div>
+        <div style={styles.verifiedBadge}>✓</div>
       </div>
 
-      <h3 style={styles.name}>{displayName}</h3>
+      {/* Name – larger & bolder */}
+      <h4 style={styles.name}>{displayName}</h4>
 
-      <div style={styles.skillContainer}>
-        {skills.map((skill, index) => (
-          <span key={index} style={styles.skillBadge}>
-            {typeof skill === 'object' ? (skill.name || skill.title) : String(skill)}
-          </span>
-        ))}
-      </div>
+      {/* Skill tag – larger & bolder */}
+      {skills.length > 0 && (
+        <div style={styles.skillTag}>
+          {skills[0]}{skills.length > 1 ? ' +' : ''}
+        </div>
+      )}
 
+      {/* Info Section – larger & bolder */}
       <div style={styles.infoSection}>
-        <div style={styles.infoItem}>📍 {data.location || "N/A"}</div>
-
-        <div style={styles.infoItem}>⭐ {averageRating} ({data.reviewCount || 0} reviews)</div>
+        <div style={styles.infoItem}>
+          <span style={styles.infoIcon}>📍</span> {data.location?.split(',')[0] || 'Hargeisa'}
+        </div>
+     
       </div>
 
-      <button
-        onClick={handleHire}
-        disabled={isBooking || data.dailyRequestCount >= 3}
-        style={{
-          ...styles.hireButton,
-          opacity: (isBooking || data.dailyRequestCount >= 3) ? 0.7 : 1,
-          cursor: (isBooking || data.dailyRequestCount >= 3) ? 'not-allowed' : 'pointer',
-        }}
-        className="hire-button"
-      >
-        {data.dailyRequestCount >= 3 ? 'Limit Reached' : isBooking ? 'Sending...' : 'Hire Now'}
-      </button>
-
-      <div style={styles.ratingSection}>
-        <div style={styles.starRow}>
+      {/* Rating Stars */}
+      <div style={styles.ratingContainer}>
+        <div style={styles.starsContainer}>
           {[1, 2, 3, 4, 5].map((s) => (
             <span
               key={s}
@@ -135,7 +138,9 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
               onClick={() => canRate && handleRate(s)}
               style={{
                 ...styles.star,
-                color: s <= (hoverStar || 0) ? '#f59e0b' : '#e2e8f0',
+                color: s <= (hoverStar || Math.floor(parseFloat(averageRating))) 
+                  ? '#fbbf24' 
+                  : '#e2e8f0',
                 transform: hoverStar === s ? 'scale(1.2)' : 'scale(1)',
                 cursor: canRate ? 'pointer' : 'default',
               }}
@@ -144,42 +149,196 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
             </span>
           ))}
         </div>
-        {canRate && <div style={styles.rateNowText}>Please rate your experience!</div>}
+        {canRate && <div style={styles.rateNowText}>PLEASE RATE!</div>}
+        {!canRate && (
+          <span style={styles.ratingText}>
+            {averageRating} ({data.reviewCount || 0} REVIEWS)
+          </span>
+        )}
       </div>
 
-      <style>{`
-        .hire-button {
-          transition: all 0.3s ease;
-          background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-          border: none;
-          color: white;
-          font-weight: 700;
-          padding: 14px;
-          border-radius: 40px;
-          width: 100%;
-          font-size: 1rem;
-        }
-        .hire-button:hover:not(:disabled) {
-          transform: scale(1.02);
-          background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
-        }
-      `}</style>
+      {/* Hire Button – larger & bolder */}
+      <button
+        onClick={handleHire}
+        disabled={isBooking || data.dailyRequestCount >= 3}
+        style={{
+          ...styles.hireButton,
+          opacity: (isBooking || data.dailyRequestCount >= 3) ? 0.7 : 1,
+          cursor: (isBooking || data.dailyRequestCount >= 3) ? 'not-allowed' : 'pointer',
+        }}
+      >
+        <span style={styles.buttonIcon}>📨</span>
+        {data.dailyRequestCount >= 3 ? 'LIMIT REACHED' : isBooking ? 'SENDING...' : 'HIRE NOW'}
+      </button>
+
+      {/* Hover glow effect */}
+      {isHovered && <div style={styles.cardGlow} />}
     </div>
   );
 }
 
+// Updated styles – all text now bold and 10% larger
 const styles = {
-  card: { background: 'white', borderRadius: '24px', padding: '24px 20px', width: '320px', border: '1px solid rgba(226, 232, 240, 0.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transition: 'all 0.3s ease', position: 'relative' },
-  statusBadge: { background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)', color: '#166534', fontWeight: '700', fontSize: '13px', padding: '6px 16px', borderRadius: '40px', marginBottom: '16px' },
-  statusDot: { marginRight: '5px' },
-  name: { fontSize: '1.6rem', fontWeight: '800', margin: '0 0 8px 0', color: '#0f172a' },
-  skillContainer: { display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', marginBottom: '20px' },
-  skillBadge: { background: '#4f46e5', color: 'white', padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' },
-  infoSection: { width: '100%', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', color: '#334155' },
-  infoItem: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' },
-  hireButton: { width: '100%', marginBottom: '16px' },
-  ratingSection: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' },
-  starRow: { display: 'flex', gap: '4px' },
-  star: { fontSize: '24px', transition: 'all 0.2s' },
-  rateNowText: { fontSize: '12px', color: '#10b981', fontWeight: '700' }
+  card: {
+    background: '#ffffff',
+    borderRadius: '20px',
+    padding: '18px 16px 20px',
+    width: '270px', // slightly wider to accommodate larger text
+    border: '1px solid #64748b',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    position: 'relative',
+    overflow: 'hidden',
+    boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.02), 0 10px 20px -8px rgba(0,0,0,0.08)',
+  },
+  cardTopBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '6px',
+    background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+  },
+  cardGlow: {
+    position: 'absolute',
+    inset: 0,
+    borderRadius: 'inherit',
+    padding: '2px',
+    background: 'linear-gradient(135deg, #3b82f6, #60a5fa, #93c5fd)',
+    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+    mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+    WebkitMaskComposite: 'xor',
+    maskComposite: 'exclude',
+    pointerEvents: 'none',
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: '12px',
+  },
+  avatar: {
+    width: '75px', // slightly larger for better proportion
+    height: '75px',
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, #4f46e5, #3730a3)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '3px solid white',
+    boxShadow: '0 8px 12px -6px rgba(79,70,229,0.3)',
+  },
+  avatarText: {
+    color: 'white',
+    fontSize: '2.0rem', // increased by ~10%
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: '0px',
+    right: '0px',
+    width: '24px',
+    height: '24px',
+    background: '#10b981',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'white',
+    fontSize: '15px',
+    fontWeight: '800',
+    border: '2px solid white',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+  },
+  name: {
+    fontSize: '1.4rem', // increased from 1.3rem
+    fontWeight: '800',
+    margin: '0 0 8px 0',
+    color: '#0f172a',
+    textTransform: 'uppercase',
+  },
+  skillTag: {
+    background: '#f1f5f9',
+    color: '#475569',
+    padding: '6px 18px',
+    borderRadius: '30px',
+    fontWeight: '800',
+    fontSize: '0.95rem', // increased from 0.85rem
+    marginBottom: '16px',
+    border: '1px solid #cbd5e1',
+    display: 'inline-block',
+    textTransform: 'uppercase',
+  },
+  infoSection: {
+    width: '100%',
+    marginBottom: '16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    fontSize: '0.95rem', // increased from 0.85rem
+    color: '#334155',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  infoItem: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+  },
+  infoIcon: {
+    fontSize: '1.1rem', // slightly larger to match
+    fontWeight: '400',
+  },
+  ratingContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '4px',
+    marginBottom: '16px',
+  },
+  starsContainer: {
+    display: 'flex',
+    gap: '4px',
+  },
+  star: {
+    fontSize: '1.4rem', // increased from 1.3rem
+    transition: 'all 0.2s',
+  },
+  ratingText: {
+    fontSize: '0.9rem', // increased from 0.8rem
+    fontWeight: '800',
+    color: '#64748b',
+    textTransform: 'uppercase',
+  },
+  rateNowText: {
+    fontSize: '0.8rem', // increased from 0.7rem
+    color: '#10b981',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  hireButton: {
+    background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '30px',
+    padding: '12px 18px',
+    fontSize: '1.0rem', // increased from 0.9rem
+    fontWeight: '800',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    width: '100%',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 4px 10px -4px #3b82f6',
+    textTransform: 'uppercase',
+    letterSpacing: '0.3px',
+  },
+  buttonIcon: {
+    fontSize: '1.1rem', // slightly larger
+  },
 };

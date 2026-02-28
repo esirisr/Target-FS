@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import API from '../services/api';
+import { useNavigate } from 'react-router-dom';
 import ProCard from '../components/ProCard';
 
 export default function ClientHome() {
+  const navigate = useNavigate();
   const [pros, setPros] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +20,8 @@ export default function ClientHome() {
     "Mechanic",
     "Electrician",
     "Carpenter",
+    "Cleaner",
+    "Gardener",
     "Mason"
   ];
 
@@ -32,6 +36,9 @@ export default function ClientHome() {
   const loadData = async () => {
     try {
       const res = await API.get('/admin/dashboard');
+      console.log('Dashboard data:', res.data);
+      
+      // Get verified professionals
       const verifiedPros = (res.data.allPros || []).filter(
         p => p.isVerified && !p.isSuspended
       );
@@ -67,6 +74,12 @@ export default function ClientHome() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    navigate('/login');
+  };
+
   useEffect(() => {
     loadData();
     // Poll for status updates every 20 seconds
@@ -76,9 +89,10 @@ export default function ClientHome() {
 
   // Filter pros by selected skill
   const filteredPros = pros.filter(pro => {
+    if (selectedSkill === "All") return true;
     const rawSkills = pro.skills || [];
     const skillList = rawSkills.map(s => String(s).toLowerCase());
-    return selectedSkill === "All" || skillList.includes(selectedSkill.toLowerCase());
+    return skillList.includes(selectedSkill.toLowerCase());
   });
 
   if (loading) {
@@ -112,9 +126,9 @@ export default function ClientHome() {
       </div>
 
       <div style={styles.layout}>
-        {/* Sidebar - Request Panel (Skill removed per request) */}
+        {/* Sidebar - Request Panel */}
         <aside style={styles.sidebar}>
-          <h3 style={styles.sidebarTitle}>📬 Your Requests</h3>
+          <h3 style={styles.sidebarTitle}>Your Requests</h3>
           {requests.length === 0 ? (
             <p style={styles.noRequests}>No requests yet</p>
           ) : (
@@ -122,7 +136,7 @@ export default function ClientHome() {
               {requests.map(req => (
                 <div key={req._id} style={styles.requestCard}>
                   <div style={styles.requestHeader}>
-                    <span style={styles.proName}>{req.professional?.name || 'Professional'}</span>
+                    <span style={styles.requestProName}>{req.professional?.name || 'Professional'}</span>
                     <span style={styles.statusBadge(req.status)}>
                       {req.status}
                     </span>
@@ -130,7 +144,6 @@ export default function ClientHome() {
                   <div style={styles.requestDetails}>
                     <p style={styles.detailItem}>📅 {new Date(req.createdAt).toLocaleDateString()}</p>
                     <p style={styles.detailItem}>📍 {req.professional?.location || 'Hargeisa'}</p>
-                    <p style={styles.detailItem}>📞 {req.professional?.phone || 'N/A'}</p>
                   </div>
                 </div>
               ))}
@@ -140,6 +153,7 @@ export default function ClientHome() {
 
         {/* Main Content */}
         <main style={styles.mainContent}>
+          {/* Skills Filter Navbar */}
           <nav style={styles.stickyNav}>
             <div style={styles.filterNav}>
               {skills.map(skill => (
@@ -154,26 +168,19 @@ export default function ClientHome() {
             </div>
           </nav>
 
+          {/* Professionals Grid */}
           <div style={styles.container}>
             {filteredPros.length > 0 ? (
               <div style={styles.proGrid}>
-                {filteredPros.map((p, index) => (
-                  <div
-                    key={p._id}
-                    style={{
-                      ...styles.cardWrapper,
-                      animationDelay: `${index * 0.1}s`,
-                    }}
-                    className="pro-card-wrapper"
-                  >
-                    <ProCard
-                      pro={p}
-                      onAction={loadData}
-                      userBookings={requests}
-                      onNotify={addNotification}
-                      selectedSkill={selectedSkill}
-                    />
-                  </div>
+                {filteredPros.map((pro) => (
+                  <ProCard
+                    key={pro._id}
+                    pro={pro}
+                    userBookings={requests}
+                    onAction={loadData}
+                    onNotify={addNotification}
+                    selectedSkill={selectedSkill}
+                  />
                 ))}
               </div>
             ) : (
@@ -188,49 +195,316 @@ export default function ClientHome() {
       </div>
 
       <style>{`
-        .toast-slide-in { animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        .marketplace-loader { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .pro-card-wrapper { opacity: 0; animation: fadeInUp 0.5s ease-out forwards; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .toast-slide-in { 
+          animation: slideIn 0.3s ease-out; 
+        }
+        
+        @keyframes slideIn { 
+          from { 
+            transform: translateX(100%); 
+            opacity: 0; 
+          } 
+          to { 
+            transform: translateX(0); 
+            opacity: 1; 
+          } 
+        }
+        
+        .marketplace-loader { 
+          width: 60px; 
+          height: 60px; 
+          border: 6px solid #e0e7ff; 
+          border-top: 6px solid #1d4ed8; 
+          border-radius: 50%; 
+          animation: spin 1s linear infinite; 
+        }
+        
+        @keyframes spin { 
+          0% { transform: rotate(0deg); } 
+          100% { transform: rotate(360deg); } 
+        }
+
+        @media (max-width: 1024px) {
+          .pro-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .layout {
+            flex-direction: column !important;
+            padding: 16px !important;
+          }
+          .sidebar {
+            width: 100% !important;
+            position: static !important;
+          }
+          .pro-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 16px !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .pro-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        .filterNav::-webkit-scrollbar {
+          height: 6px;
+        }
+        .filterNav::-webkit-scrollbar-track {
+          background: #e0e7ff;
+          border-radius: 10px;
+        }
+        .filterNav::-webkit-scrollbar-thumb {
+          background: #1d4ed8;
+          border-radius: 10px;
+          border: 1px solid #ffffff;
+        }
       `}</style>
     </div>
   );
 }
 
+// Updated styles – larger, bolder text for better visibility
 const styles = {
-  page: { background: '#f8fafc', minHeight: '100vh' },
-  layout: { display: 'flex', maxWidth: '1400px', margin: '0 auto', padding: '20px', gap: '30px' },
-  sidebar: { flex: '0 0 320px', background: '#fff', borderRadius: '24px', padding: '20px', height: 'fit-content', position: 'sticky', top: '20px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' },
-  sidebarTitle: { fontSize: '1.2rem', fontWeight: '800', color: '#0f172a', marginBottom: '20px' },
-  requestList: { display: 'flex', flexDirection: 'column', gap: '15px' },
-  requestCard: { background: '#f8fafc', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0' },
-  requestHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' },
-  proName: { fontWeight: '700', color: '#1e293b' },
+  page: { 
+    background: '#ffffff', 
+    minHeight: '100vh',
+    width: '100%',
+    overflowX: 'hidden',
+    paddingTop: '20px',
+    // subtle dot pattern
+    backgroundImage: 'radial-gradient(circle at 10px 10px, #e0e7ff 2px, transparent 2px)',
+    backgroundSize: '30px 30px',
+  },
+  layout: { 
+    display: 'flex', 
+    maxWidth: '1400px', 
+    margin: '0 auto', 
+    padding: '24px', 
+    gap: '30px',
+  },
+  sidebar: { 
+    flex: '0 0 280px', 
+    background: '#ffffff', 
+    borderRadius: '24px', 
+    padding: '24px 20px', 
+    height: 'fit-content', 
+    position: 'sticky', 
+    top: '20px', 
+    boxShadow: '0 15px 35px -10px rgba(29, 78, 216, 0.2), 0 0 0 1px rgba(29, 78, 216, 0.1) inset', 
+    border: '1px solid #e0e7ff',
+  },
+  sidebarTitle: { 
+    fontSize: '1.3rem', 
+    fontWeight: '800', 
+    color: '#1d4ed8', 
+    marginBottom: '20px',
+    paddingBottom: '12px',
+    borderBottom: '2px solid #1d4ed8',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  noRequests: {
+    color: '#1e293b',
+    textAlign: 'center',
+    padding: '24px 16px',
+    fontSize: '1.1rem',
+    fontWeight: '700',
+    background: '#ffffff',
+    borderRadius: '16px',
+    border: '2px dashed #e0e7ff',
+    boxShadow: 'inset 0 2px 8px rgba(29,78,216,0.02)',
+  },
+  requestList: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '12px',
+  },
+  requestCard: { 
+    background: '#ffffff', 
+    borderRadius: '16px', 
+    padding: '14px', 
+    border: '1px solid #e0e7ff',
+    boxShadow: '0 4px 12px rgba(29,78,216,0.05)',
+    transition: 'all 0.2s ease',
+  },
+  requestHeader: { 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: '10px' 
+  },
+  requestProName: { 
+    fontWeight: '800', 
+    color: '#1d4ed8', 
+    fontSize: '1rem',
+    textTransform: 'uppercase',
+  },
   statusBadge: (status) => ({
-    padding: '4px 10px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: '800', textTransform: 'uppercase',
+    padding: '4px 10px', 
+    borderRadius: '20px', 
+    fontSize: '0.8rem', 
+    fontWeight: '700', 
+    textTransform: 'uppercase',
     background: status === 'approved' ? '#dcfce7' : status === 'rejected' ? '#fee2e2' : '#fef3c7',
-    color: status === 'approved' ? '#166534' : status === 'rejected' ? '#991b1b' : '#92400e'
+    color: status === 'approved' ? '#166534' : status === 'rejected' ? '#991b1b' : '#92400e',
+    border: '1px solid currentColor',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
   }),
-  requestDetails: { fontSize: '0.85rem', color: '#64748b', display: 'flex', flexDirection: 'column', gap: '6px' },
-  detailItem: { margin: 0 },
-  mainContent: { flex: 1 },
-  stickyNav: { position: 'sticky', top: 0, zIndex: 10, background: 'rgba(248, 250, 252, 0.9)', backdropFilter: 'blur(10px)', padding: '10px 0', marginBottom: '20px' },
-  filterNav: { display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' },
-  filterButton: { padding: '8px 20px', borderRadius: '25px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontWeight: '600', color: '#64748b', whiteSpace: 'nowrap' },
-  filterActive: { padding: '8px 20px', borderRadius: '25px', background: '#4f46e5', color: '#fff', border: '1px solid #4f46e5', fontWeight: '600', whiteSpace: 'nowrap' },
-  container: { paddingBottom: '40px' },
-  proGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '35px' },
-  cardWrapper: { display: 'flex', justifyContent: 'center' },
-  toastContainer: { position: 'fixed', top: '20px', right: '20px', zIndex: 10000, display: 'flex', flexDirection: 'column', gap: '10px' },
-  notificationItem: { background: '#fff', padding: '15px 25px', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', borderLeft: '6px solid', display: 'flex', alignItems: 'center', gap: '15px', minWidth: '300px' },
-  notificationIcon: { fontSize: '1.4rem' },
-  notificationMessage: { fontSize: '0.9rem', fontWeight: '600', color: '#1e293b' },
-  loaderContainer: { height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
-  loaderText: { marginTop: '20px', color: '#4f46e5', fontWeight: 'bold' },
-  emptyState: { textAlign: 'center', marginTop: '100px' },
-  emptyIcon: { fontSize: '3rem' },
-  emptyText: { fontWeight: 'bold', fontSize: '1.2rem', color: '#1e293b' },
-  emptySubtext: { color: '#64748b' }
+  requestDetails: { 
+    fontSize: '0.9rem', 
+    color: '#1e293b', 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '6px' 
+  },
+  detailItem: { 
+    margin: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    color: '#334155',
+    fontWeight: '700',
+  },
+  mainContent: { 
+    flex: 1,
+    minWidth: 0,
+  },
+  stickyNav: { 
+    position: 'sticky', 
+    top: '20px', 
+    zIndex: 90, 
+    background: 'rgba(255,255,255,0.85)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    padding: '16px 0 12px 0', 
+    marginBottom: '30px',
+    borderRadius: '40px',
+    boxShadow: '0 10px 25px -8px rgba(29,78,216,0.15), 0 0 0 1px rgba(29,78,216,0.1)',
+  },
+  filterNav: { 
+    display: 'flex', 
+    gap: '8px', 
+    overflowX: 'auto', 
+    padding: '0 8px 8px 8px',
+    scrollbarWidth: 'thin',
+    scrollbarColor: '#1d4ed8 #e0e7ff',
+  },
+  filterButton: { 
+    padding: '12px 24px', 
+    borderRadius: '40px', 
+    border: '1px solid #e0e7ff', 
+    background: '#ffffff', 
+    cursor: 'pointer', 
+    fontWeight: '700', 
+    color: '#1e293b', 
+    whiteSpace: 'nowrap',
+    fontSize: '1rem',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 2px 6px rgba(29,78,216,0.05)',
+  },
+  filterActive: { 
+    padding: '12px 24px', 
+    borderRadius: '40px', 
+    background: '#1d4ed8', 
+    color: '#ffffff', 
+    border: '1px solid #1d4ed8', 
+    fontWeight: '800', 
+    whiteSpace: 'nowrap',
+    fontSize: '1rem',
+    boxShadow: '0 8px 16px -6px #1d4ed8',
+    transform: 'scale(1.02)',
+  },
+  container: { 
+    paddingBottom: '40px',
+  },
+  proGrid: { 
+    display: 'grid', 
+    gridTemplateColumns: 'repeat(3, 1fr)', 
+    gap: '24px',
+  },
+  toastContainer: { 
+    position: 'fixed', 
+    top: '80px', 
+    right: '20px', 
+    zIndex: 10000, 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '10px',
+    maxWidth: '360px',
+  },
+  notificationItem: { 
+    background: '#ffffff', 
+    padding: '14px 18px', 
+    borderRadius: '16px', 
+    boxShadow: '0 15px 30px -10px rgba(29, 78, 216, 0.25), 0 0 0 1px rgba(29,78,216,0.1)', 
+    borderLeft: '4px solid', 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: '12px', 
+    minWidth: '260px',
+    backdropFilter: 'blur(8px)',
+  },
+  notificationIcon: { 
+    fontSize: '1.4rem' 
+  },
+  notificationMessage: { 
+    fontSize: '0.95rem', 
+    fontWeight: '700', 
+    color: '#1e293b',
+    flex: 1,
+  },
+  loaderContainer: { 
+    height: '100vh', 
+    display: 'flex', 
+    flexDirection: 'column', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    background: '#ffffff',
+    backgroundImage: 'radial-gradient(circle at 20px 20px, #e0e7ff 3px, transparent 3px)',
+    backgroundSize: '40px 40px',
+  },
+  loaderText: { 
+    marginTop: '24px', 
+    color: '#1d4ed8', 
+    fontWeight: '800',
+    fontSize: '1.2rem',
+    letterSpacing: '0.5px',
+    textShadow: '0 2px 4px rgba(29,78,216,0.2)',
+  },
+  emptyState: { 
+    textAlign: 'center', 
+    marginTop: '80px',
+    padding: '40px 20px',
+    background: '#ffffff',
+    borderRadius: '48px',
+    boxShadow: '0 20px 40px -15px rgba(29,78,216,0.2), inset 0 1px 3px rgba(255,255,255,0.9)',
+    border: '1px solid #e0e7ff',
+    maxWidth: '500px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+  },
+  emptyIcon: { 
+    fontSize: '4rem',
+    display: 'block',
+    marginBottom: '16px',
+    color: '#1d4ed8',
+    opacity: 0.8,
+    filter: 'drop-shadow(0 8px 12px rgba(29,78,216,0.3))',
+  },
+  emptyText: { 
+    fontWeight: '800', 
+    fontSize: '1.5rem', 
+    color: '#1d4ed8',
+    marginBottom: '8px',
+  },
+  emptySubtext: { 
+    color: '#475569',
+    fontSize: '1.1rem',
+    fontWeight: '700',
+  }
 };

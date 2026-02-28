@@ -22,7 +22,7 @@ export default function Navbar() {
         {/* HOME LINK */}
         <Link to="/" style={styles.navLink}>Home</Link>
 
-        {token && (
+        {token && role === 'admin' &&(
           /* DASHBOARD LINK */
           <Link to="/analytics" style={styles.navLink}>Dashboard</Link>
         )}
@@ -84,11 +84,11 @@ const styles = {
     justifyContent: 'center',
     borderRadius: '8px',
     fontWeight: '900',
-    fontSize: '1.3rem'      // increased from 1.1rem
+    fontSize: '1.1rem'
   },
   logoText: { 
     color: '#ffffff', 
-    fontSize: '1.3rem',      // increased from 1.1rem
+    fontSize: '1.1rem', 
     fontWeight: '800', 
     letterSpacing: '0.5px' 
   },
@@ -100,11 +100,12 @@ const styles = {
   navLink: { 
     color: 'rgba(255, 255, 255, 0.9)', 
     textDecoration: 'none', 
-    fontWeight: '700',        // increased from 600
-    fontSize: '1rem',         // increased from 0.9rem
+    fontWeight: '600', 
+    fontSize: '0.9rem',
     padding: '8px 12px',
     borderRadius: '8px',
     transition: 'background 0.2s ease'
+    // This style covers Home, Dashboard, and Management
   },
   marketplaceBtn: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -112,8 +113,8 @@ const styles = {
     textDecoration: 'none',
     padding: '10px 20px',
     borderRadius: '12px',
-    fontWeight: '800',        // increased from 700
-    fontSize: '0.95rem',      // increased from 0.85rem
+    fontWeight: '700',
+    fontSize: '0.85rem',
     border: '1px solid rgba(255, 255, 255, 0.3)',
     transition: 'all 0.2s ease',
     backdropFilter: 'blur(5px)'
@@ -124,8 +125,8 @@ const styles = {
     textDecoration: 'none', 
     padding: '10px 24px', 
     borderRadius: '12px', 
-    fontWeight: '800',        // increased from 700
-    fontSize: '1rem',         // increased from 0.9rem
+    fontWeight: '700',
+    fontSize: '0.9rem',
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
   },
   logoutBtn: { 
@@ -134,8 +135,8 @@ const styles = {
     border: 'none', 
     padding: '10px 20px', 
     borderRadius: '12px', 
-    fontWeight: '800',        // unchanged (already 800)
-    fontSize: '0.95rem',      // increased from 0.85rem
+    fontWeight: '800', 
+    fontSize: '0.85rem',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)'

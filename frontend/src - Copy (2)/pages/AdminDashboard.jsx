@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { fetchAnalytics } from "../services/api";
 
 // ==================== CONSTANTS ====================
-const REFRESH_INTERVAL = 300000; // 5 minutes
+const REFRESH_INTERVAL = 300000; // 5 minutes (optional auto-refresh)
 
 // ==================== HELPER FUNCTIONS ====================
 const normalizeLocationArray = (arr) => {
@@ -52,6 +52,7 @@ const useAnalyticsData = () => {
 
   useEffect(() => {
     loadData();
+    // Optional: auto-refresh every 5 minutes
     const interval = setInterval(() => loadData(false), REFRESH_INTERVAL);
     return () => clearInterval(interval);
   }, [loadData]);
@@ -130,6 +131,7 @@ export default function AdminDashboard() {
       <DesignTokens />
       <Header lastUpdated={lastUpdated} onRefresh={refetch} isRefreshing={isLoading} />
 
+      {/* KPI Sections – trend props removed */}
       <section className="kpi-section">
         <div className="kpi-grid">
           <StatCard label="Total Users" value={totalUsers} icon="👥" />
@@ -149,6 +151,7 @@ export default function AdminDashboard() {
         </div>
       </section>
 
+      {/* Main Panels */}
       <div className="panels-grid">
         {/* Full-width: Requests & Categories */}
         <Panel title="📍 Requests by Location & 📦 Categories" accentColor="var(--primary)">
@@ -235,9 +238,11 @@ export default function AdminDashboard() {
           )}
         </Panel>
 
-        <Panel title="🔧 Skills" accentColor="var(--warning)" className="half-panel">
+        <Panel title="🔧 Skills & Pro Health" accentColor="var(--warning)" className="half-panel">
           <div className="panel-subsection">
+            <h3 className="panel-subtitle">Skills Distribution</h3>
             {data.skillsDistribution?.length > 0 ? (
+              /* ===== NEW TABLE STYLE FOR SKILLS ===== */
               <div className="skills-table">
                 <div className="skills-table-header">
                   <span>Skill</span>
@@ -272,7 +277,7 @@ const Header = ({ lastUpdated, onRefresh, isRefreshing }) => {
   return (
     <header className="header">
       <div className="header-left">
-        <h1 className="header-title">Analytic Dashboard</h1>
+        <h1 className="header-title">Command Center</h1>
         <div className="header-badge">LIVE</div>
       </div>
       <div className="header-right">
@@ -363,31 +368,31 @@ const ErrorMessage = ({ message, onRetry }) => (
 
 const EmptyState = ({ message }) => <p className="empty-state">{message}</p>;
 
-// ==================== DESIGN TOKENS & STYLES (UPDATED) ====================
+// ==================== DESIGN TOKENS & STYLES ====================
 const DesignTokens = () => (
   <style>{`
     :root {
-      /* Royal blue palette */
-      --primary: #1d4ed8;
+      /* Core palette */
+      --primary: #4361ee;
       --primary-light: #e0e7ff;
-      --primary-dark: #1e3a8a;
-      --bg: #ffffff;
+      --primary-dark: #3730a3;
+      --bg: #f8fafc;
       --card-bg: rgba(255, 255, 255, 0.8);
       --card-bg-solid: #ffffff;
       --text-main: #0f172a;
-      --text-muted: #334155;
-      --border: #e0e7ff;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
       --success: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
       --info: #3b82f6;
 
-      /* Glass & shadows */
+      /* Glass effect */
       --glass-blur: 12px;
-      --glass-border: 1px solid rgba(29, 78, 216, 0.1);
-      --shadow-sm: 0 4px 6px -1px rgba(29, 78, 216, 0.05), 0 2px 4px -1px rgba(29, 78, 216, 0.02);
-      --shadow-md: 0 10px 15px -3px rgba(29, 78, 216, 0.1), 0 4px 6px -2px rgba(29, 78, 216, 0.05);
-      --shadow-lg: 0 20px 25px -5px rgba(29, 78, 216, 0.15), 0 10px 10px -5px rgba(29, 78, 216, 0.02);
+      --glass-border: 1px solid rgba(255, 255, 255, 0.2);
+      --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+      --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01);
       --radius-lg: 28px;
       --radius-md: 20px;
       --radius-sm: 16px;
@@ -408,8 +413,9 @@ const DesignTokens = () => (
       padding: 32px;
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       color: var(--text-main);
-      background-image: radial-gradient(circle at 10px 10px, #e0e7ff 2px, transparent 2px);
-      background-size: 30px 30px;
+      background: radial-gradient(circle at 10% 20%, rgba(67, 97, 238, 0.03) 0%, transparent 30%),
+                  radial-gradient(circle at 90% 70%, rgba(245, 158, 11, 0.03) 0%, transparent 30%),
+                  var(--bg);
     }
 
     /* Header */
@@ -434,7 +440,7 @@ const DesignTokens = () => (
     }
 
     .header-title {
-      font-size: 2rem;
+      font-size: 1.8rem;
       font-weight: 800;
       background: linear-gradient(135deg, var(--primary) 0%, var(--info) 100%);
       -webkit-background-clip: text;
@@ -446,8 +452,8 @@ const DesignTokens = () => (
       color: white;
       padding: 4px 12px;
       border-radius: 100px;
-      font-size: 0.75rem;
-      font-weight: 800;
+      font-size: 0.7rem;
+      font-weight: 700;
       letter-spacing: 0.5px;
       text-transform: uppercase;
       box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
@@ -470,27 +476,26 @@ const DesignTokens = () => (
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
     }
 
     .last-updated-label {
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.03em;
-      font-weight: 700;
     }
 
     .last-updated-time {
-      font-weight: 800;
-      font-size: 1rem;
+      font-weight: 700;
+      font-size: 0.9rem;
     }
 
     .refresh-btn {
       background: var(--primary-light);
       border: none;
       color: var(--primary-dark);
-      font-weight: 700;
-      padding: 10px 20px;
+      font-weight: 600;
+      padding: 8px 16px;
       border-radius: 40px;
       cursor: pointer;
       display: flex;
@@ -498,7 +503,6 @@ const DesignTokens = () => (
       gap: 8px;
       transition: all 0.2s;
       border: 1px solid transparent;
-      font-size: 0.95rem;
     }
 
     .refresh-btn:hover:not(:disabled) {
@@ -582,15 +586,15 @@ const DesignTokens = () => (
     }
 
     .stat-icon {
-      font-size: 2.4rem;
+      font-size: 2.2rem;
       background: var(--primary-light);
-      width: 72px;
-      height: 72px;
+      width: 64px;
+      height: 64px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 10px rgba(29, 78, 216, 0.2);
+      box-shadow: 0 4px 10px rgba(67, 97, 238, 0.2);
     }
 
     .stat-content {
@@ -598,8 +602,8 @@ const DesignTokens = () => (
     }
 
     .stat-label {
-      font-size: 0.85rem;
-      font-weight: 800;
+      font-size: 0.75rem;
+      font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -607,7 +611,7 @@ const DesignTokens = () => (
     }
 
     .stat-value {
-      font-size: 2.2rem;
+      font-size: 2rem;
       font-weight: 800;
       color: var(--text-main);
       line-height: 1.2;
@@ -637,7 +641,7 @@ const DesignTokens = () => (
     }
 
     .panel:first-child {
-      grid-column: 1 / -1;
+      grid-column: 1 / -1; /* Full width */
     }
 
     .panel:hover {
@@ -645,7 +649,7 @@ const DesignTokens = () => (
     }
 
     .panel-title {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 800;
       padding: 24px 28px 0;
       margin-bottom: 16px;
@@ -653,7 +657,7 @@ const DesignTokens = () => (
       display: flex;
       align-items: center;
       gap: 8px;
-      border-bottom: 2px solid var(--border);
+      border-bottom: 2px solid rgba(0,0,0,0.05);
       padding-bottom: 16px;
     }
 
@@ -672,8 +676,8 @@ const DesignTokens = () => (
     }
 
     .panel-subtitle {
-      font-size: 1rem;
-      font-weight: 800;
+      font-size: 0.9rem;
+      font-weight: 700;
       color: var(--text-muted);
       margin-bottom: 16px;
       text-transform: uppercase;
@@ -689,13 +693,13 @@ const DesignTokens = () => (
       display: flex;
       justify-content: space-between;
       margin-bottom: 6px;
-      font-size: 0.95rem;
-      font-weight: 600;
+      font-size: 0.9rem;
     }
 
     .progress-label {
       text-transform: capitalize;
       color: var(--text-main);
+      font-weight: 500;
     }
 
     .progress-value {
@@ -703,7 +707,7 @@ const DesignTokens = () => (
     }
 
     .progress-bar {
-      background: #e0e7ff;
+      background: rgba(0,0,0,0.05);
       height: 8px;
       border-radius: 20px;
       overflow: hidden;
@@ -727,7 +731,7 @@ const DesignTokens = () => (
 
     .location-card:hover {
       border-color: var(--primary);
-      box-shadow: 0 8px 20px rgba(29, 78, 216, 0.1);
+      box-shadow: 0 8px 20px rgba(67, 97, 238, 0.1);
       transform: translateY(-2px);
     }
 
@@ -739,15 +743,14 @@ const DesignTokens = () => (
     }
 
     .location-name {
-      font-weight: 800;
+      font-weight: 700;
       text-transform: capitalize;
-      font-size: 1.1rem;
+      font-size: 1rem;
     }
 
     .location-stats {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: var(--text-muted);
-      font-weight: 600;
     }
 
     .location-bars {
@@ -761,14 +764,30 @@ const DesignTokens = () => (
     }
 
     .bar-label {
-      font-size: 0.8rem;
-      font-weight: 700;
+      font-size: 0.7rem;
+      font-weight: 600;
       color: var(--text-muted);
       margin-top: 4px;
       display: block;
     }
 
-    /* Skills table */
+    .location-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      margin-top: 8px;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* ===== NEW SKILLS TABLE STYLES ===== */
     .skills-table {
       display: flex;
       flex-direction: column;
@@ -781,12 +800,12 @@ const DesignTokens = () => (
     .skills-table-header {
       display: grid;
       grid-template-columns: 1fr 80px;
-      background: var(--primary-light);
-      font-weight: 800;
-      font-size: 0.9rem;
+      background: rgba(0,0,0,0.03);
+      font-weight: 700;
+      font-size: 0.8rem;
       text-transform: uppercase;
       letter-spacing: 0.03em;
-      color: var(--primary-dark);
+      color: var(--text-muted);
       padding: 12px 16px;
       border-bottom: 2px solid var(--border);
     }
@@ -796,8 +815,7 @@ const DesignTokens = () => (
       grid-template-columns: 1fr 80px;
       padding: 10px 16px;
       border-bottom: 1px solid var(--border);
-      font-size: 0.95rem;
-      font-weight: 600;
+      font-size: 0.9rem;
     }
 
     .skills-table-row:last-child {
@@ -805,12 +823,12 @@ const DesignTokens = () => (
     }
 
     .skills-table-row:nth-child(even) {
-      background: rgba(224, 231, 255, 0.3);
+      background: rgba(0,0,0,0.02);
     }
 
     .skills-table-row span:last-child {
       text-align: right;
-      font-weight: 800;
+      font-weight: 600;
     }
 
     /* Empty & error states */
@@ -819,8 +837,6 @@ const DesignTokens = () => (
       font-style: italic;
       padding: 20px 0;
       text-align: center;
-      font-weight: 600;
-      font-size: 1rem;
     }
 
     .error-state {
@@ -840,7 +856,7 @@ const DesignTokens = () => (
       border: none;
       padding: 10px 24px;
       border-radius: 40px;
-      font-weight: 700;
+      font-weight: 600;
       margin-top: 20px;
       cursor: pointer;
       transition: all 0.2s;
@@ -858,7 +874,7 @@ const DesignTokens = () => (
     }
 
     .skeleton {
-      background: linear-gradient(90deg, #e0e7ff 25%, #c7d2fe 50%, #e0e7ff 75%);
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite;
       border-radius: var(--radius-sm);

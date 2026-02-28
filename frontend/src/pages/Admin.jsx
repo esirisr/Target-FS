@@ -81,8 +81,8 @@ export default function Admin() {
   if (loading) {
     return (
       <div style={styles.loadingWrapper}>
-        <div style={styles.spinner}></div>
-        <p style={{ color: '#0059FF', fontWeight: '600' }}>Initializing Secure Console...</p>
+        <div className="admin-loader"></div>
+        <p style={styles.loaderText}>Initializing Secure Console...</p>
       </div>
     );
   }
@@ -96,21 +96,29 @@ export default function Admin() {
             key={n.id}
             style={{
               ...styles.notification,
-              backgroundColor: n.type === "success" ? "#10b981" : "#ef4444"
+              borderLeftColor: n.type === 'success' ? '#22c55e' : '#ef4444',
             }}
+            className="toast-slide-in"
           >
-            {n.type === "success" ? "✓ " : "✕ "} {n.message}
+            <span style={styles.notificationIcon}>
+              {n.type === 'success' ? '🎉' : '⚠️'}
+            </span>
+            <span style={styles.notificationMessage}>{n.message}</span>
           </div>
         ))}
       </div>
 
-      {/* Header Section */}
+      {/* Header Section - Centered Title */}
       <div style={styles.header}>
-        <div>
+        {/* Left spacer (balances the search bar) */}
+        <div style={{ flex: 1 }}></div>
+
+        {/* Centered Title */}
+        <div style={styles.titleContainer}>
           <h2 style={styles.title}>Admin Management</h2>
-          <p style={styles.subtitle}>Manage professionals and platform health</p>
         </div>
 
+        {/* Search Bar - Right aligned */}
         <div style={styles.searchWrapper}>
           <input
             type="text"
@@ -122,27 +130,12 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div style={styles.statsContainer}>
-        <div style={styles.statBox}>
-          <h4 style={styles.statLabel}>Total Professionals</h4>
-          <p style={styles.statValue}>{data.stats.totalPros || 0}</p>
-        </div>
-        <div style={styles.statBox}>
-          <h4 style={styles.statLabel}>Verified Assets</h4>
-          <p style={styles.statValue}>{data.stats.verifiedPros || 0}</p>
-        </div>
-        <div style={styles.statBox}>
-          <h4 style={{...styles.statLabel, color: '#f59e0b'}}>Pending Review</h4>
-          <p style={{...styles.statValue, color: '#f59e0b'}}>{data.stats.pendingPros || 0}</p>
-        </div>
-      </div>
-
       {/* Grid Content */}
       <div style={styles.grid}>
         {filteredPros.length === 0 ? (
           <div style={styles.emptyState}>
-            <p>No records match your current search criteria.</p>
+            <span style={styles.emptyIcon}>🔍</span>
+            <p style={styles.emptyText}>No records match your current search criteria.</p>
           </div>
         ) : (
           filteredPros.map(pro => (
@@ -154,21 +147,67 @@ export default function Admin() {
           ))
         )}
       </div>
+
+      <style>{`
+        .admin-loader {
+          width: 60px;
+          height: 60px;
+          border: 6px solid #e0e7ff;
+          border-top: 6px solid #1d4ed8;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        .toast-slide-in {
+          animation: slideIn 0.3s ease-out;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        /* Responsive grid */
+        @media (max-width: 1200px) {
+          .grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
+        }
+        @media (max-width: 900px) {
+          .grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
 
 /* =========================
-    BEAUTIFIED STYLES
+    UPDATED STYLES (royal blue & white, bold & larger)
 ========================= */
 const styles = {
   wrapper: {
-    padding: '40px 20px',
-    maxWidth: '1240px',
+    padding: '30px 20px',
+    maxWidth: '1400px',
     margin: '0 auto',
     fontFamily: "'Inter', -apple-system, sans-serif",
-    backgroundColor: '#f8f9ff',
-    minHeight: '100vh'
+    backgroundColor: '#ffffff',
+    minHeight: '100vh',
+    backgroundImage: 'radial-gradient(circle at 10px 10px, #e0e7ff 2px, transparent 2px)',
+    backgroundSize: '30px 30px',
   },
   loadingWrapper: {
     display: 'flex',
@@ -176,114 +215,155 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'center',
     height: '100vh',
-    gap: '20px'
+    gap: '20px',
+    background: '#ffffff',
+    backgroundImage: 'radial-gradient(circle at 20px 20px, #e0e7ff 3px, transparent 3px)',
+    backgroundSize: '40px 40px',
   },
-  spinner: {
-    width: '40px',
-    height: '40px',
-    border: '4px solid #f3f3f3',
-    borderTop: '4px solid #0059FF',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite'
+  loaderText: {
+    color: '#1d4ed8',
+    fontWeight: '800',
+    fontSize: '1.2rem',
+    letterSpacing: '0.5px',
+    textShadow: '0 2px 4px rgba(29,78,216,0.2)',
   },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: '40px',
-    flexWrap: 'wrap',
-    gap: '20px'
+    alignItems: 'center',
+    marginBottom: '30px',
+    gap: '20px',
+  },
+  titleContainer: {
+    textAlign: 'center',
+    flex: '0 1 auto',
   },
   title: {
     margin: 0,
     fontSize: '2rem',
     fontWeight: '800',
-    color: '#0f172a',
-    letterSpacing: '-0.025em'
+    background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    letterSpacing: '-0.025em',
   },
   subtitle: {
-    margin: '5px 0 0',
-    color: '#64748b',
-    fontSize: '1rem'
+    margin: '8px 0 0',
+    color: '#1e293b',
+    fontSize: '1.1rem',
+    fontWeight: '700',
   },
   searchWrapper: {
-    flex: '1',
-    maxWidth: '400px',
-    minWidth: '300px'
+    flex: 1,
+    display: 'flex',
+    justifyContent: 'flex-end',
+    minWidth: '280px',
   },
   search: {
     width: '100%',
+    maxWidth: '350px',
     padding: '14px 20px',
-    borderRadius: '12px',
-    border: '1px solid #e2e8f0',
-    backgroundColor: '#fff',
-    fontSize: '0.95rem',
+    borderRadius: '40px',
+    border: '1px solid #e0e7ff',
+    backgroundColor: '#ffffff',
+    fontSize: '1rem',
+    fontWeight: '600',
     outline: 'none',
     transition: 'all 0.2s ease',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-    boxSizing: 'border-box'
+    boxShadow: '0 2px 8px rgba(29,78,216,0.05)',
+    boxSizing: 'border-box',
+    ':focus': {
+      borderColor: '#1d4ed8',
+      boxShadow: '0 0 0 3px rgba(29,78,216,0.2)',
+    },
   },
   statsContainer: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '24px',
-    marginBottom: '40px'
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '20px',
+    marginBottom: '40px',
   },
   statBox: {
     background: '#ffffff',
-    padding: '30px 24px',
-    borderRadius: '20px',
-    border: '1px solid #eef2ff',
-    boxShadow: '0 10px 25px rgba(0, 89, 255, 0.04)',
+    padding: '24px 20px',
+    borderRadius: '24px',
+    border: '1px solid #e0e7ff',
+    boxShadow: '0 10px 25px -8px rgba(29,78,216,0.15)',
     textAlign: 'left',
-    borderTop: '5px solid #0059FF',
-    transition: 'transform 0.2s ease'
+    borderTop: '4px solid #1d4ed8',
+    transition: 'transform 0.2s ease',
   },
   statLabel: {
-    fontSize: '0.75rem',
+    fontSize: '0.8rem',
     fontWeight: '700',
     color: '#64748b',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
-    margin: '0 0 10px 0'
+    margin: '0 0 8px 0',
   },
   statValue: {
-    fontSize: '2.25rem',
+    fontSize: '2.2rem',
     fontWeight: '800',
-    color: '#0059FF',
-    margin: 0
+    color: '#1d4ed8',
+    margin: 0,
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-    gap: '24px'
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '20px',
+    justifyContent: 'center',
   },
   emptyState: {
     gridColumn: '1 / -1',
     textAlign: 'center',
-    padding: '60px',
-    background: '#fff',
-    borderRadius: '20px',
-    color: '#64748b',
-    border: '2px dashed #e2e8f0'
+    padding: '60px 20px',
+    background: '#ffffff',
+    borderRadius: '48px',
+    border: '2px dashed #e0e7ff',
+    boxShadow: '0 20px 40px -15px rgba(29,78,216,0.1)',
+  },
+  emptyIcon: {
+    fontSize: '4rem',
+    display: 'block',
+    marginBottom: '16px',
+    color: '#1d4ed8',
+    opacity: 0.8,
+    filter: 'drop-shadow(0 8px 12px rgba(29,78,216,0.3))',
+  },
+  emptyText: {
+    fontSize: '1.3rem',
+    fontWeight: '700',
+    color: '#1e293b',
   },
   notificationContainer: {
     position: 'fixed',
-    top: 30,
-    right: 30,
+    top: 20,
+    right: 20,
     zIndex: 9999,
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px'
+    gap: '10px',
+    maxWidth: '360px',
   },
   notification: {
-    color: '#fff',
-    padding: '16px 24px',
-    borderRadius: '12px',
-    fontWeight: '600',
-    fontSize: '0.9rem',
-    boxShadow: '0 10px 15px rgba(0,0,0,0.1)',
-    minWidth: '250px',
-    animation: 'slideIn 0.3s ease-out'
-  }
+    background: '#ffffff',
+    padding: '14px 18px',
+    borderRadius: '16px',
+    boxShadow: '0 15px 30px -10px rgba(29,78,216,0.25), 0 0 0 1px rgba(29,78,216,0.1)',
+    borderLeft: '4px solid',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    minWidth: '260px',
+    backdropFilter: 'blur(8px)',
+  },
+  notificationIcon: {
+    fontSize: '1.4rem',
+  },
+  notificationMessage: {
+    fontSize: '0.95rem',
+    fontWeight: '700',
+    color: '#1e293b',
+    flex: 1,
+  },
 };

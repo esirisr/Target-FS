@@ -86,18 +86,19 @@ export default function ProDashboard() {
       <div style={styles.container}>
 
         {/* STATUS BANNER */}
-        <div style={
-          isSuspended
+        <div style={{
+          ...styles.bannerBase,
+          ...(isSuspended
             ? styles.suspendedBanner
             : isVerified
               ? styles.verifiedBanner
-              : styles.reviewBanner
-        }>
+              : styles.reviewBanner)
+        }}>
           <div style={styles.bannerContent}>
             <span style={styles.bannerIcon}>
               {isSuspended ? '🚫' : isVerified ? '🛡️' : '⏳'}
             </span>
-            <div>
+            <div style={styles.bannerText}>
               <h2 style={styles.bannerTitle}>
                 {isSuspended
                   ? "Account Suspended"
@@ -133,6 +134,7 @@ export default function ProDashboard() {
                 fetchData();
               }}
               style={styles.refreshBtn}
+              disabled={refreshing}
             >
               {refreshing ? 'Refreshing...' : '🔄 Refresh'}
             </button>
@@ -141,7 +143,7 @@ export default function ProDashboard() {
           {bookings.length === 0 ? (
             <div style={styles.emptyContainer}>
               <span style={styles.emptyIcon}>📭</span>
-              <p>No job requests yet.</p>
+              <p style={styles.emptyText}>No job requests yet.</p>
             </div>
           ) : (
             bookings.map(req => (
@@ -162,7 +164,7 @@ export default function ProDashboard() {
                 </div>
 
                 <div style={styles.bookingBody}>
-                  <div>
+                  <div style={styles.bookingInfo}>
                     <h4 style={styles.clientName}>
                       {req.client?.name || 'Client'}
                     </h4>
@@ -192,11 +194,11 @@ export default function ProDashboard() {
                       <>
                         <button
                           onClick={() => handleStatusUpdate(req._id, 'approved')}
-                          disabled={!isVerified || isSuspended}
+                          disabled={!isVerified || isSuspended || refreshing}
                           style={{
                             ...styles.acceptBtn,
-                            opacity: (!isVerified || isSuspended) ? 0.5 : 1,
-                            cursor: (!isVerified || isSuspended) ? 'not-allowed' : 'pointer'
+                            opacity: (!isVerified || isSuspended || refreshing) ? 0.5 : 1,
+                            cursor: (!isVerified || isSuspended || refreshing) ? 'not-allowed' : 'pointer'
                           }}
                         >
                           Accept
@@ -204,7 +206,12 @@ export default function ProDashboard() {
 
                         <button
                           onClick={() => handleStatusUpdate(req._id, 'rejected')}
-                          style={styles.rejectBtn}
+                          disabled={refreshing}
+                          style={{
+                            ...styles.rejectBtn,
+                            opacity: refreshing ? 0.5 : 1,
+                            cursor: refreshing ? 'not-allowed' : 'pointer'
+                          }}
                         >
                           Decline
                         </button>
@@ -213,10 +220,9 @@ export default function ProDashboard() {
 
                     {req.status === 'approved' && req.client?.phone && (
                       <a
-                        href={`tel:${req.client.phone}`}
-                        style={styles.callBtn}
+  
                       >
-                        📞 Call
+             
                       </a>
                     )}
                   </div>
@@ -229,15 +235,188 @@ export default function ProDashboard() {
 
       <style>{`
         .loader-spinner {
-          width: 50px;
-          height: 50px;
-          border: 4px solid #e2e8f0;
-          border-top-color: #6366f1;
+          width: 60px;
+          height: 60px;
+          border: 6px solid #e0e7ff;
+          border-top-color: #1d4ed8;
           border-radius: 50%;
           animation: spin 1s linear infinite;
         }
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Media Queries (unchanged but inherited) */
+        @media (max-width: 1024px) {
+          .container {
+            padding: 30px 20px !important;
+          }
+          .stats-grid {
+            gap: 16px !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .container {
+            padding: 20px 16px !important;
+          }
+          .banner-content {
+            gap: 12px !important;
+          }
+          .banner-icon {
+            font-size: 24px !important;
+          }
+          .banner-title {
+            font-size: 1.2rem !important;
+          }
+          .banner-sub {
+            font-size: 0.85rem !important;
+          }
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+            margin-bottom: 30px !important;
+          }
+          .stat-card {
+            padding: 16px !important;
+          }
+          .stat-value {
+            font-size: 1.4rem !important;
+          }
+          .main-card {
+            padding: 20px !important;
+          }
+          .booking-card {
+            padding: 16px !important;
+          }
+          .booking-body {
+            flex-direction: column !important;
+            gap: 15px !important;
+          }
+          .booking-info {
+            width: 100% !important;
+          }
+          .actions {
+            width: 100% !important;
+            justify-content: flex-start !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .container {
+            padding: 16px 12px !important;
+          }
+          .banner-content {
+            flex-direction: column !important;
+            text-align: center !important;
+            gap: 8px !important;
+          }
+          .banner-text {
+            text-align: center !important;
+          }
+          .stats-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .stat-card {
+            padding: 14px !important;
+          }
+          .header-row {
+            flex-direction: column !important;
+            gap: 10px !important;
+            align-items: flex-start !important;
+          }
+          .refresh-btn {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          .booking-header {
+            flex-direction: column !important;
+            gap: 8px !important;
+            align-items: flex-start !important;
+          }
+          .booking-status-badge {
+            align-self: flex-start !important;
+          }
+          .booking-date {
+            font-size: 0.8rem !important;
+          }
+          .client-name {
+            font-size: 1rem !important;
+          }
+          .detail-text, .privacy-note {
+            font-size: 0.85rem !important;
+          }
+          .actions {
+            flex-direction: column !important;
+            gap: 8px !important;
+          }
+          .accept-btn, .reject-btn, .call-btn {
+            width: 100% !important;
+            text-align: center !important;
+            padding: 12px !important;
+          }
+          .empty-container {
+            padding: 30px 20px !important;
+          }
+          .empty-icon {
+            font-size: 3rem !important;
+          }
+          .empty-text {
+            font-size: 0.9rem !important;
+          }
+        }
+
+        @media (max-width: 360px) {
+          .container {
+            padding: 12px 10px !important;
+          }
+          .banner-title {
+            font-size: 1rem !important;
+          }
+          .banner-sub {
+            font-size: 0.8rem !important;
+          }
+          .stat-label {
+            font-size: 0.8rem !important;
+          }
+          .stat-value {
+            font-size: 1.2rem !important;
+          }
+          .section-title {
+            font-size: 1rem !important;
+          }
+        }
+
+        /* Landscape Mode */
+        @media (orientation: landscape) and (max-height: 600px) {
+          .container {
+            padding: 15px !important;
+          }
+          .stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
+          .booking-card {
+            margin-bottom: 10px !important;
+          }
+        }
+
+        /* Tablet Landscape */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+          .stats-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
+        }
+
+        /* Improve touch targets on mobile */
+        @media (max-width: 768px) {
+          button, .refresh-btn, .accept-btn, .reject-btn, .call-btn {
+            min-height: 44px !important;
+          }
+        }
+
+        /* Smooth transitions */
+        .booking-card, .stat-card, .banner-base {
+          transition: all 0.3s ease !important;
         }
       `}</style>
     </div>
@@ -251,7 +430,7 @@ function StatCard({ icon, label, value }) {
   return (
     <div style={styles.statCard}>
       <span style={styles.statIcon}>{icon}</span>
-      <div>
+      <div style={styles.statInfo}>
         <p style={styles.statLabel}>{label}</p>
         <p style={styles.statValue}>{value}</p>
       </div>
@@ -270,56 +449,326 @@ const statusColor = (status) =>
       : '#f59e0b';
 
 /* =============================
-   STYLES
+   UPDATED STYLES (royal blue & white, bold & larger)
 ============================= */
 const styles = {
-  page: { background: '#f8fafc', minHeight: '100vh' },
-  container: { maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' },
+  page: { 
+    background: '#ffffff', 
+    minHeight: '100vh',
+    width: '100%',
+    overflowX: 'hidden',
+    backgroundImage: 'radial-gradient(circle at 10px 10px, #e0e7ff 2px, transparent 2px)',
+    backgroundSize: '30px 30px',
+  },
+  container: { 
+    maxWidth: '1100px', 
+    margin: '0 auto', 
+    padding: '40px 20px',
+  },
 
-  reviewBanner: { background: '#fef3c7', padding: '24px', borderRadius: '20px', marginBottom: '30px' },
-  verifiedBanner: { background: '#dcfce7', padding: '24px', borderRadius: '20px', marginBottom: '30px' },
-  suspendedBanner: { background: '#fee2e2', padding: '24px', borderRadius: '20px', marginBottom: '30px' },
+  // Banners – keep functional colors but adjust typography
+  bannerBase: { 
+    padding: '24px', 
+    borderRadius: '20px', 
+    marginBottom: '30px',
+    boxShadow: '0 10px 25px -8px rgba(29,78,216,0.15)',
+    border: '1px solid rgba(0,0,0,0.05)',
+  },
+  reviewBanner: { 
+    background: '#fef3c7', 
+  },
+  verifiedBanner: { 
+    background: '#dcfce7', 
+  },
+  suspendedBanner: { 
+    background: '#fee2e2', 
+  },
 
-  bannerContent: { display: 'flex', alignItems: 'center', gap: '20px' },
-  bannerIcon: { fontSize: '30px' },
-  bannerTitle: { margin: 0 },
-  bannerSub: { margin: '5px 0 0' },
+  bannerContent: { 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: '20px',
+  },
+  bannerIcon: { 
+    fontSize: '32px',
+    flexShrink: 0,
+  },
+  bannerText: {
+    flex: 1,
+  },
+  bannerTitle: { 
+    margin: 0,
+    fontSize: '1.5rem',
+    fontWeight: '800',
+  },
+  bannerSub: { 
+    margin: '5px 0 0',
+    fontSize: '1rem',
+    fontWeight: '600',
+    opacity: 0.8,
+  },
 
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '40px' },
-  statCard: { background: '#fff', padding: '20px', borderRadius: '20px', display: 'flex', gap: '15px' },
-  statIcon: { fontSize: '24px' },
-  statLabel: { margin: 0, fontSize: '0.9rem' },
-  statValue: { margin: 0, fontSize: '1.6rem', fontWeight: '800' },
+  statsGrid: { 
+    display: 'grid', 
+    gridTemplateColumns: 'repeat(3, 1fr)', 
+    gap: '20px', 
+    marginBottom: '40px',
+  },
+  statCard: { 
+    background: 'rgba(255,255,255,0.8)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    padding: '24px', 
+    borderRadius: '24px', 
+    display: 'flex', 
+    gap: '16px',
+    boxShadow: '0 10px 25px -8px rgba(29,78,216,0.15), 0 0 0 1px rgba(29,78,216,0.1)',
+    border: '1px solid rgba(255,255,255,0.2)',
+    transition: 'transform 0.2s, box-shadow 0.2s',
+    ':hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: '0 20px 30px -12px rgba(29,78,216,0.25)',
+    }
+  },
+  statIcon: { 
+    fontSize: '28px',
+    flexShrink: 0,
+  },
+  statInfo: {
+    flex: 1,
+  },
+  statLabel: { 
+    margin: 0, 
+    fontSize: '0.95rem',
+    fontWeight: '700',
+    color: '#64748b',
+    textTransform: 'uppercase',
+    letterSpacing: '0.03em',
+  },
+  statValue: { 
+    margin: 0, 
+    fontSize: '2rem', 
+    fontWeight: '800',
+    color: '#0f172a',
+    lineHeight: 1.2,
+  },
 
-  mainCard: { background: '#fff', borderRadius: '25px', padding: '30px' },
-  headerRow: { display: 'flex', justifyContent: 'space-between', marginBottom: '20px' },
-  sectionTitle: { margin: 0 },
-  refreshBtn: { padding: '8px 15px', cursor: 'pointer' },
+  mainCard: { 
+    background: 'rgba(255,255,255,0.8)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    borderRadius: '28px', 
+    padding: '30px',
+    boxShadow: '0 15px 35px -10px rgba(29,78,216,0.2), 0 0 0 1px rgba(29,78,216,0.1)',
+    border: '1px solid rgba(255,255,255,0.2)',
+  },
+  headerRow: { 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+    gap: '10px',
+  },
+  sectionTitle: { 
+    margin: 0,
+    fontSize: '1.4rem',
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  refreshBtn: { 
+    padding: '10px 20px',
+    background: '#e0e7ff',
+    border: '1px solid #1d4ed8',
+    borderRadius: '40px',
+    cursor: 'pointer',
+    fontSize: '0.95rem',
+    fontWeight: '700',
+    color: '#1d4ed8',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    transition: 'all 0.2s ease',
+    ':hover': {
+      background: '#1d4ed8',
+      color: '#fff',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 10px 20px -8px #1d4ed8',
+    }
+  },
 
-  bookingCard: { padding: '20px', borderRadius: '20px', border: '1px solid #f1f5f9', borderLeftWidth: '6px', marginBottom: '15px' },
-  bookingHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '10px' },
+  bookingCard: { 
+    padding: '20px', 
+    borderRadius: '20px', 
+    border: '1px solid #e0e7ff', 
+    borderLeftWidth: '6px', 
+    marginBottom: '15px',
+    background: '#ffffff',
+    boxShadow: '0 4px 12px rgba(29,78,216,0.05)',
+    transition: 'transform 0.2s, box-shadow 0.2s',
+    ':hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 12px 24px -8px rgba(29,78,216,0.2)',
+    }
+  },
+  bookingHeader: { 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: '12px',
+    flexWrap: 'wrap',
+    gap: '8px',
+  },
   bookingStatusBadge: (color) => ({
     background: color + '20',
     color,
-    padding: '6px 12px',
+    padding: '6px 14px',
     borderRadius: '50px',
-    fontSize: '12px',
-    fontWeight: '700'
+    fontSize: '0.8rem',
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: '0.03em',
   }),
-  bookingBody: { display: 'flex', justifyContent: 'space-between' },
+  bookingDate: {
+    fontSize: '0.85rem',
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  bookingBody: { 
+    display: 'flex', 
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: '15px',
+  },
+  bookingInfo: {
+    flex: 1,
+    minWidth: '200px',
+  },
+  clientName: { 
+    margin: 0,
+    fontSize: '1.2rem',
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: '4px',
+  },
+  detailText: { 
+    margin: '4px 0',
+    fontSize: '0.95rem',
+    fontWeight: '600',
+    color: '#334155',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+  },
+  phoneNumberText: { 
+    fontWeight: '800',
+    color: '#0f172a',
+    margin: '4px 0',
+    fontSize: '0.95rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+  },
+  privacyNote: { 
+    fontStyle: 'italic', 
+    color: '#94a3b8',
+    fontSize: '0.9rem',
+    fontWeight: '600',
+    margin: '4px 0',
+  },
 
-  clientName: { margin: 0 },
-  detailText: { margin: '5px 0' },
-  phoneNumberText: { fontWeight: '800' },
-  privacyNote: { fontStyle: 'italic', color: '#94a3b8' },
+  actions: { 
+    display: 'flex', 
+    gap: '10px', 
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  acceptBtn: { 
+    background: '#10b981', 
+    color: '#fff', 
+    border: 'none', 
+    padding: '10px 20px', 
+    borderRadius: '40px',
+    fontSize: '0.95rem',
+    fontWeight: '700',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 4px 10px -4px #10b981',
+    ':hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 10px 20px -8px #10b981',
+    }
+  },
+  rejectBtn: { 
+    background: '#f1f5f9', 
+    border: '1px solid #e0e7ff',
+    padding: '10px 20px', 
+    borderRadius: '40px',
+    fontSize: '0.95rem',
+    fontWeight: '700',
+    color: '#334155',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    ':hover': {
+      background: '#fee2e2',
+      borderColor: '#ef4444',
+      color: '#ef4444',
+    }
+  },
+  callBtn: { 
+    background: '#1d4ed8', 
+    color: '#fff', 
+    padding: '10px 20px', 
+    borderRadius: '40px',
+    textDecoration: 'none',
+    fontSize: '0.95rem',
+    fontWeight: '700',
+    display: 'inline-block',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 4px 10px -4px #1d4ed8',
+    ':hover': {
+      background: '#2563eb',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 10px 20px -8px #1d4ed8',
+    }
+  },
 
-  actions: { display: 'flex', gap: '10px', alignItems: 'center' },
-  acceptBtn: { background: '#10b981', color: '#fff', border: 'none', padding: '8px 15px', borderRadius: '10px' },
-  rejectBtn: { background: '#f1f5f9', border: 'none', padding: '8px 15px', borderRadius: '10px' },
-  callBtn: { background: '#6366f1', color: '#fff', padding: '8px 15px', borderRadius: '10px', textDecoration: 'none' },
+  emptyContainer: { 
+    textAlign: 'center', 
+    padding: '60px 20px',
+    background: '#ffffff',
+    borderRadius: '24px',
+    border: '2px dashed #e0e7ff',
+  },
+  emptyIcon: { 
+    fontSize: '4rem',
+    display: 'block',
+    marginBottom: '12px',
+    color: '#1d4ed8',
+    opacity: 0.6,
+  },
+  emptyText: {
+    color: '#64748b',
+    fontSize: '1.1rem',
+    fontWeight: '700',
+    margin: 0,
+  },
 
-  emptyContainer: { textAlign: 'center', padding: '40px' },
-  emptyIcon: { fontSize: '40px' },
-
-  loaderContainer: { height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
+  loaderContainer: { 
+    height: '100vh', 
+    display: 'flex', 
+    flexDirection: 'column', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    background: '#ffffff',
+    backgroundImage: 'radial-gradient(circle at 20px 20px, #e0e7ff 3px, transparent 3px)',
+    backgroundSize: '40px 40px',
+  },
+  loaderText: { 
+    marginTop: '20px', 
+    color: '#1d4ed8', 
+    fontWeight: '800',
+    fontSize: '1.1rem',
+  },
 };
