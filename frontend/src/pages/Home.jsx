@@ -9,15 +9,22 @@ export default function Home() {
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 
-  // Slider Logic (Untouched)
   const [currentImage, setCurrentImage] = useState(0);
   const images = [image1, image2, image3];
 
   useEffect(() => {
+    // Force the body to hide overflow when this component mounts
+    document.body.style.overflow = 'hidden';
+    document.body.style.margin = '0';
+    
     const timer = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % images.length);
     }, 5000);
-    return () => clearInterval(timer);
+    
+    return () => {
+      clearInterval(timer);
+      document.body.style.overflow = 'auto'; // Re-enable if user leaves home
+    };
   }, [images.length]);
 
   const handleCTA = () => {
@@ -27,9 +34,15 @@ export default function Home() {
     return navigate('/client-home');
   };
 
+  const getButtonText = () => {
+    if (!token) return 'Get Started';
+    if (role === 'pro') return 'Go to Workspace';
+    if (role === 'admin') return 'Go to Management';
+    return 'Go to Marketplace';
+  };
+
   return (
     <div style={styles.pageWrapper}>
-      {/* Background Image Slider */}
       {images.map((img, index) => (
         <div
           key={index}
@@ -40,36 +53,17 @@ export default function Home() {
           }}
         />
       ))}
-      
-      {/* Overlay - Layered between Image and Content */}
       <div style={styles.overlay} />
 
-      {/* Content */}
       <div style={styles.contentContainer}>
         <h1 style={styles.subLogo}>HOME-MAN</h1>
         <h2 style={styles.motto}>
           Expert Hands. Local Heart. <br />
-          <span style={{ color: '#3b82f6' }}>Home Services Simplified.</span>
+          <span style={{ color: '#0059FF' }}>Home Services Simplified.</span>
         </h2>
         
-        <p style={styles.subText}>
-          Your one-stop destination for reliable, professional home maintenance. 
-          From leaking pipes to complex wiring, we’ve got you covered.
-        </p>
-
-        <button
-          onClick={handleCTA}
-          style={styles.ctaButton}
-          onMouseOver={(e) => {
-            e.target.style.transform = 'scale(1.05)';
-            e.target.style.backgroundColor = '#2563eb';
-          }}
-          onMouseOut={(e) => {
-            e.target.style.transform = 'scale(1)';
-            e.target.style.backgroundColor = '#1d4ed8';
-          }}
-        >
-          {token ? 'Back to Dashboard' : 'Get Started'}
+        <button onClick={handleCTA} style={styles.ctaButton}>
+          {getButtonText()}
         </button>
       </div>
     </div>
@@ -78,15 +72,19 @@ export default function Home() {
 
 const styles = {
   pageWrapper: {
-    position: 'relative',
+    position: 'fixed', // Using fixed to lock it to the screen edges
+    top: 0,
+    left: 0,
     height: '100vh',
-    width: '100%',
-    overflow: 'hidden',
+    width: '100vw',
+    overflow: 'hidden', // Ensures no scrollbar inside the div
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    fontFamily: '"Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    backgroundColor: '#000', // Provides a base if images take a second to load
+    fontFamily: '"Segoe UI", Roboto, Arial, sans-serif',
+    backgroundColor: '#000',
+    margin: 0,
+    padding: 0,
   },
   bgImage: {
     position: 'absolute',
@@ -97,7 +95,7 @@ const styles = {
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     transition: 'opacity 1.5s ease-in-out',
-    zIndex: 1, // Base layer
+    zIndex: 1,
   },
   overlay: {
     position: 'absolute',
@@ -105,48 +103,30 @@ const styles = {
     left: 0,
     width: '100%',
     height: '100%',
-    // Switched to a dark-to-light gradient for a more modern look
-    backgroundColor: 'rgba(255, 255, 255, 0.80)', 
-    zIndex: 2, // Sits on top of images
+    backgroundColor: 'rgba(255, 255, 255, 0.82)', 
+    zIndex: 2,
   },
-  contentContainer: {
-    position: 'relative', // Ensures it stays above the absolute elements
-    textAlign: 'center',
-    padding: '0 20px',
-    maxWidth: '900px',
-    zIndex: 3, // Sits on top of the overlay
+  contentContainer: { 
+    position: 'relative', 
+    textAlign: 'center', 
+    padding: '0 20px', 
+    maxWidth: '900px', 
+    zIndex: 3,
+    marginTop: '-5vh' // Pulls content up slightly to counteract visual "heaviness" at the bottom
   },
-  subLogo: { 
-    fontSize: 'clamp(12px, 2vw, 16px)', 
-    letterSpacing: '5px', 
-    color: '#64748b', 
-    textTransform: 'uppercase',
-    marginBottom: '20px' 
-  },
-  motto: { 
-    fontSize: 'clamp(1.8rem, 6vw, 4.5rem)', 
-    fontWeight: '900', 
-    margin: '0 0 20px 0', 
-    lineHeight: '1.1',
-    color: '#0f172a'
-  },
-  subText: {
-    fontSize: 'clamp(1rem, 2.5vw, 1.2rem)',
-    color: '#475569',
-    marginBottom: '40px',
-    maxWidth: '600px',
-    marginInline: 'auto'
-  },
+  subLogo: { fontSize: '1rem', letterSpacing: '5px', color: '#64748b', textTransform: 'uppercase', marginBottom: '10px', fontWeight: '900' },
+  motto: { fontSize: 'clamp(2rem, 8vw, 4.5rem)', fontWeight: '900', margin: '0 0 30px 0', lineHeight: '1.1', color: '#0f172a' },
   ctaButton: { 
-    padding: 'clamp(15px, 3vw, 20px) clamp(30px, 6vw, 50px)', 
-    backgroundColor: '#1d4ed8', 
+    padding: '18px 45px', 
+    backgroundColor: '#0059FF', 
     color: '#fff', 
-    borderRadius: '50px', 
+    borderRadius: '12px', 
     cursor: 'pointer', 
-    fontWeight: 'bold', 
-    fontSize: 'clamp(16px, 3vw, 20px)', 
+    fontWeight: '900', 
+    fontSize: '1.1rem', 
     border: 'none', 
-    transition: 'all 0.3s ease', 
-    boxShadow: '0 10px 25px rgba(29, 78, 216, 0.3)' 
+    boxShadow: '0 10px 25px rgba(0, 89, 255, 0.3)',
+    textTransform: 'uppercase',
+    transition: 'transform 0.2s ease'
   }
 };

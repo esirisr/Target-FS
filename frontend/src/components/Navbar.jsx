@@ -22,8 +22,11 @@ export default function Navbar() {
         {/* HOME LINK */}
         <Link to="/" style={styles.navLink}>Home</Link>
 
-        {token && (
-          /* DASHBOARD LINK */
+        {/* UPDATED LOGIC: 
+            Hide "Dashboard" for both 'client' and 'pro' roles.
+            Only users with other roles (like Admin) will see this.
+        */}
+        {token && role !== 'client' && role !== 'pro' && (
           <Link to="/analytics" style={styles.navLink}>Dashboard</Link>
         )}
 
@@ -34,10 +37,13 @@ export default function Navbar() {
           </>
         ) : (
           <>
+            {/* ADMIN LINK */}
             {role === 'admin' && <Link to="/admin" style={styles.navLink}>Management</Link>}
+            
+            {/* PRO LINK - Renamed to Workspace for clarity */}
             {role === 'pro' && <Link to="/pro-dashboard" style={styles.navLink}>Workspace</Link>}
             
-            {/* MARKETPLACE LINK */}
+            {/* CLIENT LINK */}
             {role === 'client' && (
               <Link to="/client-home" style={styles.marketplaceBtn}>
                 Marketplace
@@ -84,12 +90,12 @@ const styles = {
     justifyContent: 'center',
     borderRadius: '8px',
     fontWeight: '900',
-    fontSize: '1.3rem'      // increased from 1.1rem
+    fontSize: '1.3rem'
   },
   logoText: { 
     color: '#ffffff', 
-    fontSize: '1.3rem',      // increased from 1.1rem
-    fontWeight: '800', 
+    fontSize: '1.3rem', 
+    fontWeight: '900', // Increased to 900
     letterSpacing: '0.5px' 
   },
   linksContainer: { 
@@ -100,11 +106,12 @@ const styles = {
   navLink: { 
     color: 'rgba(255, 255, 255, 0.9)', 
     textDecoration: 'none', 
-    fontWeight: '700',        // increased from 600
-    fontSize: '1rem',         // increased from 0.9rem
+    fontWeight: '900', // Increased to 900 for bold consistency
+    fontSize: '1rem', 
     padding: '8px 12px',
     borderRadius: '8px',
-    transition: 'background 0.2s ease'
+    transition: 'background 0.2s ease',
+    textTransform: 'uppercase' // Added for professional look
   },
   marketplaceBtn: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -112,11 +119,12 @@ const styles = {
     textDecoration: 'none',
     padding: '10px 20px',
     borderRadius: '12px',
-    fontWeight: '800',        // increased from 700
-    fontSize: '0.95rem',      // increased from 0.85rem
+    fontWeight: '900', // Increased to 900
+    fontSize: '0.95rem',
     border: '1px solid rgba(255, 255, 255, 0.3)',
     transition: 'all 0.2s ease',
-    backdropFilter: 'blur(5px)'
+    backdropFilter: 'blur(5px)',
+    textTransform: 'uppercase'
   },
   registerBtn: { 
     backgroundColor: '#ffffff', 
@@ -124,9 +132,10 @@ const styles = {
     textDecoration: 'none', 
     padding: '10px 24px', 
     borderRadius: '12px', 
-    fontWeight: '800',        // increased from 700
-    fontSize: '1rem',         // increased from 0.9rem
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+    fontWeight: '900', // Increased to 900
+    fontSize: '1rem', 
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+    textTransform: 'uppercase'
   },
   logoutBtn: { 
     backgroundColor: '#ffffff', 
@@ -134,10 +143,11 @@ const styles = {
     border: 'none', 
     padding: '10px 20px', 
     borderRadius: '12px', 
-    fontWeight: '800',        // unchanged (already 800)
-    fontSize: '0.95rem',      // increased from 0.85rem
+    fontWeight: '900', // Increased to 900
+    fontSize: '0.95rem', 
     cursor: 'pointer',
     transition: 'all 0.2s ease',
-    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)'
+    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+    textTransform: 'uppercase'
   }
 };
