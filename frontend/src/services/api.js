@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-//const API = axios.create({ baseURL: 'https://hbe-production.up.railway.app/api' });
-const API = axios.create({ baseURL: 'https://target-be-production.up.railway.app/api' });
+const API = axios.create({ baseURL: 'https://hbe-production.up.railway.app/api' });
+//const API = axios.create({ baseURL: 'https://target-be-production.up.railway.app/api' });
 //const API = axios.create({ baseURL: 'https://mybe.up.railway.app/api' });
 
 //const API = axios.create({ baseURL: 'http://localhost:5000/api' });
