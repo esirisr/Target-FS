@@ -11,7 +11,6 @@ export default function ClientHome() {
   const [notifications, setNotifications] = useState([]);
   const prevRequestsRef = useRef([]);
 
-  // Skills navbar
   const [selectedSkill, setSelectedSkill] = useState("All");
   const skills = [
     "All",
@@ -34,9 +33,6 @@ export default function ClientHome() {
   const loadData = async () => {
     try {
       const res = await API.get('/admin/dashboard');
-      console.log('Dashboard data:', res.data);
-      
-      // Get verified professionals
       const verifiedPros = (res.data.allPros || []).filter(
         p => p.isVerified && !p.isSuspended
       );
@@ -47,7 +43,6 @@ export default function ClientHome() {
         const bookRes = await API.get('/bookings/my-bookings');
         const newRequests = bookRes.data.bookings || [];
 
-        // Check for status changes to trigger notifications
         const prev = prevRequestsRef.current;
         if (prev.length > 0) {
           newRequests.forEach(newReq => {
@@ -80,12 +75,10 @@ export default function ClientHome() {
 
   useEffect(() => {
     loadData();
-    // Poll for status updates every 20 seconds
     const interval = setInterval(loadData, 20000);
     return () => clearInterval(interval);
   }, []);
 
-  // Filter pros by selected skill
   const filteredPros = pros.filter(pro => {
     if (selectedSkill === "All") return true;
     const rawSkills = pro.skills || [];
@@ -104,6 +97,43 @@ export default function ClientHome() {
 
   return (
     <div style={styles.page}>
+      {/* Global box-sizing */}
+      <style>{`
+        * {
+          box-sizing: border-box;
+        }
+        .toast-slide-in { 
+          animation: slideIn 0.3s ease-out; 
+        }
+        @keyframes slideIn { 
+          from { transform: translateX(100%); opacity: 0; } 
+          to { transform: translateX(0); opacity: 1; } 
+        }
+        .marketplace-loader { 
+          width: 60px; height: 60px; 
+          border: 6px solid #e0e7ff; 
+          border-top: 6px solid #1d4ed8; 
+          border-radius: 50%; 
+          animation: spin 1s linear infinite; 
+        }
+        @keyframes spin { 
+          0% { transform: rotate(0deg); } 
+          100% { transform: rotate(360deg); } 
+        }
+        .filterNav::-webkit-scrollbar {
+          height: 6px;
+        }
+        .filterNav::-webkit-scrollbar-track {
+          background: #e0e7ff;
+          border-radius: 10px;
+        }
+        .filterNav::-webkit-scrollbar-thumb {
+          background: #1d4ed8;
+          border-radius: 10px;
+          border: 1px solid #ffffff;
+        }
+      `}</style>
+
       {/* Toast Notifications */}
       <div style={styles.toastContainer}>
         {notifications.map(n => (
@@ -191,82 +221,10 @@ export default function ClientHome() {
           </div>
         </main>
       </div>
-
-      <style>{`
-        .toast-slide-in { 
-          animation: slideIn 0.3s ease-out; 
-        }
-        
-        @keyframes slideIn { 
-          from { 
-            transform: translateX(100%); 
-            opacity: 0; 
-          } 
-          to { 
-            transform: translateX(0); 
-            opacity: 1; 
-          } 
-        }
-        
-        .marketplace-loader { 
-          width: 60px; 
-          height: 60px; 
-          border: 6px solid #e0e7ff; 
-          border-top: 6px solid #1d4ed8; 
-          border-radius: 50%; 
-          animation: spin 1s linear infinite; 
-        }
-        
-        @keyframes spin { 
-          0% { transform: rotate(0deg); } 
-          100% { transform: rotate(360deg); } 
-        }
-
-        @media (max-width: 1024px) {
-          .pro-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .layout {
-            flex-direction: column !important;
-            padding: 16px !important;
-          }
-          .sidebar {
-            width: 100% !important;
-            position: static !important;
-          }
-          .pro-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 16px !important;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .pro-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-
-        .filterNav::-webkit-scrollbar {
-          height: 6px;
-        }
-        .filterNav::-webkit-scrollbar-track {
-          background: #e0e7ff;
-          border-radius: 10px;
-        }
-        .filterNav::-webkit-scrollbar-thumb {
-          background: #1d4ed8;
-          border-radius: 10px;
-          border: 1px solid #ffffff;
-        }
-      `}</style>
     </div>
   );
 }
 
-// Updated styles – larger, bolder text for better visibility
 const styles = {
   page: { 
     background: '#ffffff', 
@@ -274,19 +232,19 @@ const styles = {
     width: '100%',
     overflowX: 'hidden',
     paddingTop: '20px',
-    // subtle dot pattern
     backgroundImage: 'radial-gradient(circle at 10px 10px, #e0e7ff 2px, transparent 2px)',
     backgroundSize: '30px 30px',
   },
   layout: { 
     display: 'flex', 
+    flexWrap: 'wrap',          // Allows sidebar to stack on small screens
     maxWidth: '1400px', 
     margin: '0 auto', 
     padding: '24px', 
     gap: '30px',
   },
   sidebar: { 
-    flex: '0 0 280px', 
+    flex: '1 1 280px',         // Flex basis 280px, can grow/shrink
     background: '#ffffff', 
     borderRadius: '24px', 
     padding: '24px 20px', 
@@ -341,6 +299,8 @@ const styles = {
     color: '#1d4ed8', 
     fontSize: '1rem',
     textTransform: 'uppercase',
+    wordBreak: 'break-word',
+    maxWidth: '160px',
   },
   statusBadge: (status) => ({
     padding: '4px 10px', 
@@ -352,6 +312,7 @@ const styles = {
     color: status === 'approved' ? '#166534' : status === 'rejected' ? '#991b1b' : '#92400e',
     border: '1px solid currentColor',
     boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+    whiteSpace: 'nowrap',
   }),
   requestDetails: { 
     fontSize: '0.9rem', 
@@ -367,9 +328,10 @@ const styles = {
     gap: '6px',
     color: '#334155',
     fontWeight: '700',
+    wordBreak: 'break-word',
   },
   mainContent: { 
-    flex: 1,
+    flex: '3 1 600px',         // Takes more space, minimum 600px before wrapping
     minWidth: 0,
   },
   stickyNav: { 
@@ -422,8 +384,9 @@ const styles = {
   },
   proGrid: { 
     display: 'grid', 
-    gridTemplateColumns: 'repeat(3, 1fr)', 
+    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', // Flexible columns
     gap: '24px',
+    justifyContent: 'center',
   },
   toastContainer: { 
     position: 'fixed', 
@@ -455,6 +418,7 @@ const styles = {
     fontWeight: '700', 
     color: '#1e293b',
     flex: 1,
+    wordBreak: 'break-word',
   },
   loaderContainer: { 
     height: '100vh', 

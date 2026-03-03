@@ -363,7 +363,7 @@ const ErrorMessage = ({ message, onRetry }) => (
 
 const EmptyState = ({ message }) => <p className="empty-state">{message}</p>;
 
-// ==================== DESIGN TOKENS & STYLES (UPDATED) ====================
+// ==================== DESIGN TOKENS & STYLES (UPDATED WITH CENTERING FIX) ====================
 const DesignTokens = () => (
   <style>{`
     :root {
@@ -406,6 +406,9 @@ const DesignTokens = () => (
     .admin-dashboard {
       min-height: 100vh;
       padding: 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       color: var(--text-main);
       background-image: radial-gradient(circle at 10px 10px, #e0e7ff 2px, transparent 2px);
@@ -902,12 +905,27 @@ const DesignTokens = () => (
       }
       .header {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
         gap: 16px;
       }
+      .header-left,
       .header-right {
-        width: 100%;
-        justify-content: space-between;
+        justify-content: center;
+        text-align: center; /* Center text horizontally */
+      }
+      .header-right {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .last-updated {
+        align-items: center;
+        text-align: center; /* Center the text inside */
+      }
+      .refresh-btn {
+        justify-content: center;
+      }
+      .header-title {
+        font-size: 1.6rem; /* Slightly smaller on mobile */
       }
       .kpi-grid {
         grid-template-columns: 1fr;
@@ -915,6 +933,19 @@ const DesignTokens = () => (
       .panel-row {
         grid-template-columns: 1fr;
         gap: 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stat-card {
+        flex-direction: column;
+        text-align: center;
+      }
+      .stat-icon {
+        margin-bottom: 8px;
+      }
+      .header-title {
+        font-size: 1.4rem;
       }
     }
   `}</style>

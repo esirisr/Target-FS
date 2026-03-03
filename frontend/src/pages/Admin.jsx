@@ -8,9 +8,6 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState('');
   const [notifications, setNotifications] = useState([]);
 
-  /* =========================
-      LOAD DASHBOARD DATA
-  ========================== */
   useEffect(() => {
     loadData();
   }, []);
@@ -40,9 +37,6 @@ export default function Admin() {
     }
   };
 
-  /* =========================
-      ACTION HANDLER
-  ========================== */
   const handleAction = async (id, type) => {
     try {
       if (type === 'verify') await verifyPro(id);
@@ -59,9 +53,6 @@ export default function Admin() {
     }
   };
 
-  /* =========================
-      NOTIFICATIONS
-  ========================== */
   const addNotification = (message, type = "error") => {
     const id = Date.now();
     setNotifications(prev => [...prev, { id, message, type }]);
@@ -70,9 +61,6 @@ export default function Admin() {
     }, 4000);
   };
 
-  /* =========================
-      FILTERING
-  ========================== */
   const filteredPros = data.allPros.filter(pro =>
     pro.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     pro.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -108,17 +96,11 @@ export default function Admin() {
         ))}
       </div>
 
-      {/* Header Section - Centered Title */}
+      {/* Header */}
       <div style={styles.header}>
-        {/* Left spacer (balances the search bar) */}
-        <div style={{ flex: 1 }}></div>
-
-        {/* Centered Title */}
         <div style={styles.titleContainer}>
           <h2 style={styles.title}>Admin Management</h2>
         </div>
-
-        {/* Search Bar - Right aligned */}
         <div style={styles.searchWrapper}>
           <input
             type="text"
@@ -130,7 +112,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Grid Content */}
+      {/* Responsive Grid */}
       <div style={styles.grid}>
         {filteredPros.length === 0 ? (
           <div style={styles.emptyState}>
@@ -149,6 +131,9 @@ export default function Admin() {
       </div>
 
       <style>{`
+        * {
+          box-sizing: border-box;
+        }
         .admin-loader {
           width: 60px;
           height: 60px;
@@ -174,34 +159,15 @@ export default function Admin() {
             opacity: 1;
           }
         }
-        /* Responsive grid */
-        @media (max-width: 1200px) {
-          .grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-          }
-        }
-        @media (max-width: 900px) {
-          .grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-        }
-        @media (max-width: 600px) {
-          .grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
       `}</style>
     </div>
   );
 }
 
-/* =========================
-    UPDATED STYLES (royal blue & white, bold & larger)
-========================= */
 const styles = {
   wrapper: {
     padding: '30px 20px',
-    maxWidth: '1400px',
+    maxWidth: '1600px',         // Increased to allow more cards per row on large screens
     margin: '0 auto',
     fontFamily: "'Inter', -apple-system, sans-serif",
     backgroundColor: '#ffffff',
@@ -229,39 +195,33 @@ const styles = {
   },
   header: {
     display: 'flex',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '30px',
+    marginBottom: '40px',       // Increased margin
     gap: '20px',
   },
   titleContainer: {
+    flex: '1 1 auto',
     textAlign: 'center',
-    flex: '0 1 auto',
   },
   title: {
     margin: 0,
-    fontSize: '2rem',
+    fontSize: 'clamp(1.5rem, 5vw, 2rem)',
     fontWeight: '800',
     background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     letterSpacing: '-0.025em',
   },
-  subtitle: {
-    margin: '8px 0 0',
-    color: '#1e293b',
-    fontSize: '1.1rem',
-    fontWeight: '700',
-  },
   searchWrapper: {
-    flex: 1,
+    flex: '1 1 300px',          // Slightly larger minimum width
     display: 'flex',
     justifyContent: 'flex-end',
-    minWidth: '280px',
   },
   search: {
     width: '100%',
-    maxWidth: '350px',
+    maxWidth: '380px',
     padding: '14px 20px',
     borderRadius: '40px',
     border: '1px solid #e0e7ff',
@@ -272,45 +232,11 @@ const styles = {
     transition: 'all 0.2s ease',
     boxShadow: '0 2px 8px rgba(29,78,216,0.05)',
     boxSizing: 'border-box',
-    ':focus': {
-      borderColor: '#1d4ed8',
-      boxShadow: '0 0 0 3px rgba(29,78,216,0.2)',
-    },
-  },
-  statsContainer: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '20px',
-    marginBottom: '40px',
-  },
-  statBox: {
-    background: '#ffffff',
-    padding: '24px 20px',
-    borderRadius: '24px',
-    border: '1px solid #e0e7ff',
-    boxShadow: '0 10px 25px -8px rgba(29,78,216,0.15)',
-    textAlign: 'left',
-    borderTop: '4px solid #1d4ed8',
-    transition: 'transform 0.2s ease',
-  },
-  statLabel: {
-    fontSize: '0.8rem',
-    fontWeight: '700',
-    color: '#64748b',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    margin: '0 0 8px 0',
-  },
-  statValue: {
-    fontSize: '2.2rem',
-    fontWeight: '800',
-    color: '#1d4ed8',
-    margin: 0,
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '20px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', // Increased min width from 260px to 280px
+    gap: '24px',                // Larger gap
     justifyContent: 'center',
   },
   emptyState: {

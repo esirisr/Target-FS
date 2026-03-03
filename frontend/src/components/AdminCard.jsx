@@ -7,7 +7,6 @@ export default function AdminCard({ pro, onAction }) {
   const isUnrated = !pro.reviewCount || pro.reviewCount === 0;
   const displayRating = isUnrated ? "0.0" : Number(pro.rating).toFixed(1);
 
-  // Extract initials for avatar
   const initials = pro.name
     ? pro.name
         .split(' ')
@@ -30,13 +29,12 @@ export default function AdminCard({ pro, onAction }) {
         borderColor: isPending ? '#94a3b8' : '#2563eb',
       }}
     >
-      {/* Animated gradient border (blue on hover) */}
       {isHovered && <div style={styles.cardGlow} />}
 
-      {/* Avatar with vibrant blue gradient */}
-   
+      <div style={styles.avatar}>
+        <span style={styles.avatarText}>{initials}</span>
+      </div>
 
-      {/* Status Badge – blue theme */}
       <div
         style={{
           ...styles.statusBadge,
@@ -51,30 +49,29 @@ export default function AdminCard({ pro, onAction }) {
         {isPending ? 'PENDING APPROVAL' : 'ACTIVE & VERIFIED'}
       </div>
 
-      {/* Name */}
       <h3 style={styles.name}>{pro.name}</h3>
 
-      {/* Skills Tag (vibrant blue) */}
       {pro.skills?.length > 0 && (
         <div style={styles.skillTag}>
           {pro.skills.join(' • ')}
         </div>
       )}
 
-      {/* Info Section */}
       <div style={styles.infoSection}>
         <div style={styles.infoItem}>
-          <span style={styles.infoIcon}>📍</span> {pro.location?.toUpperCase() || 'N/A'}
+          <span style={styles.infoIcon}>📍</span> 
+          <span style={styles.infoText}>{pro.location?.toUpperCase() || 'N/A'}</span>
         </div>
         <div style={styles.infoItem}>
-          <span style={styles.infoIcon}>📞</span> {pro.phone || 'N/A'}
+          <span style={styles.infoIcon}>📞</span> 
+          <span style={styles.infoText}>{pro.phone || 'N/A'}</span>
         </div>
         <div style={styles.infoItem}>
-          <span style={styles.infoIcon}>✉️</span> {pro.email?.toUpperCase() || 'N/A'}
+          <span style={styles.infoIcon}>✉️</span> 
+          <span style={styles.infoText}>{pro.email?.toUpperCase() || 'N/A'}</span>
         </div>
       </div>
 
-      {/* Rating Pill */}
       <div style={styles.ratingPill}>
         <span style={styles.ratingLabel}>⭐ RATING</span>
         <span
@@ -88,10 +85,8 @@ export default function AdminCard({ pro, onAction }) {
         <span style={styles.reviewCount}>({pro.reviewCount || 0})</span>
       </div>
 
-      {/* Divider */}
       <div style={styles.divider} />
 
-      {/* Action Buttons */}
       <div style={styles.buttonGroup}>
         {isPending && (
           <button
@@ -112,7 +107,6 @@ export default function AdminCard({ pro, onAction }) {
         </button>
       </div>
 
-      {/* Global button styles */}
       <style>{`
         .admin-button {
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -165,8 +159,10 @@ const styles = {
     WebkitBackdropFilter: 'blur(8px)',
     borderRadius: '28px',
     padding: '22px 19px',
-    width: '272px',
-    border: '1px solid #64748b', // darker border for visibility
+    width: '100%',
+    maxWidth: '340px',          // Slightly larger to accommodate content
+    margin: '0 auto',
+    border: '1px solid #64748b',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -174,6 +170,8 @@ const styles = {
     transition: 'transform 0.25s ease, box-shadow 0.3s ease, border-color 0.2s ease',
     position: 'relative',
     overflow: 'hidden',
+    wordBreak: 'break-word',    // Prevent long words from overflowing
+    overflowWrap: 'break-word',
   },
   cardGlow: {
     position: 'absolute',
@@ -207,8 +205,8 @@ const styles = {
   },
   statusBadge: {
     fontWeight: '700',
-    fontSize: '0.85rem',        // increased
-    padding: '6px 16px',         // more padding
+    fontSize: '0.8rem',          // Slightly smaller to fit
+    padding: '6px 14px',
     borderRadius: '40px',
     display: 'inline-flex',
     alignItems: 'center',
@@ -220,39 +218,45 @@ const styles = {
     WebkitBackdropFilter: 'blur(4px)',
     textTransform: 'uppercase',
     letterSpacing: '0.3px',
+    whiteSpace: 'nowrap',        // Keep badge text on one line
   },
   statusDot: {
     fontSize: '16px',
     lineHeight: 1,
+    animation: 'pulse 2s infinite',
   },
   name: {
-    fontSize: '1.3rem',          // matched to ProCard name
+    fontSize: '1.2rem',          // Slightly reduced
     fontWeight: '800',
     margin: '0 0 8px 0',
     color: '#0f172a',
-    lineHeight: 1.2,
+    lineHeight: 1.3,
     textTransform: 'uppercase',
   },
   skillTag: {
     background: 'linear-gradient(135deg, #2563eb, #1e3a8a)',
     color: 'white',
-    padding: '6px 16px',
+    padding: '6px 14px',
     borderRadius: '40px',
     fontWeight: '700',
-    fontSize: '0.85rem',          // increased
-    marginBottom: '18px',
+    fontSize: '0.8rem',
+    marginBottom: '16px',
     boxShadow: '0 4px 10px -2px rgba(37, 99, 235, 0.3)',
     display: 'inline-block',
     letterSpacing: '0.3px',
     textTransform: 'uppercase',
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   infoSection: {
     width: '100%',
-    marginBottom: '18px',
+    marginBottom: '16px',
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
-    fontSize: '0.85rem',          // increased
+    fontSize: '0.8rem',
     color: '#334155',
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -261,11 +265,15 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '8px',
+    gap: '6px',
+    flexWrap: 'wrap',            // Allow wrapping if needed
   },
   infoIcon: {
     fontSize: '1rem',
     filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+  },
+  infoText: {
+    wordBreak: 'break-word',
   },
   ratingPill: {
     display: 'flex',
@@ -273,7 +281,7 @@ const styles = {
     justifyContent: 'center',
     gap: '6px',
     backgroundColor: '#f1f5f9',
-    padding: '8px 16px',
+    padding: '8px 14px',
     borderRadius: '40px',
     marginBottom: '16px',
     width: 'fit-content',
@@ -283,18 +291,18 @@ const styles = {
     boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.02)',
   },
   ratingLabel: {
-    fontSize: '0.8rem',           // increased
+    fontSize: '0.75rem',
     fontWeight: '700',
     color: '#475569',
     textTransform: 'uppercase',
     letterSpacing: '0.3px',
   },
   ratingValue: {
-    fontSize: '1.3rem',           // slightly larger
+    fontSize: '1.2rem',
     fontWeight: '800',
   },
   reviewCount: {
-    fontSize: '0.8rem',           // increased
+    fontSize: '0.75rem',
     fontWeight: '600',
     color: '#64748b',
     textTransform: 'uppercase',

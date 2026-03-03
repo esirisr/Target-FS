@@ -6,11 +6,9 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
   const [isBooking, setIsBooking] = useState(false);
   const [hoverStar, setHoverStar] = useState(0);
 
-  // Normalizing data to handle both direct pro objects and nested professional objects
   const data = pro.professional || pro;
   const displayName = data.name || "Professional";
 
-  // Extract initials for avatar
   const initials = displayName
     .split(' ')
     .map(word => word[0])
@@ -18,7 +16,6 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
     .toUpperCase()
     .slice(0, 2);
 
-  // Check if this specific professional has an accepted booking that needs a rating
   const bookingToRate = userBookings.find(b =>
     b.professional?._id === data._id &&
     (b.status === 'approved' || b.status === 'accepted') &&
@@ -42,7 +39,6 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
   };
 
   const handleHire = async () => {
-    // Prevent spam: Check if a request was sent in the last 2 hours
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
     const hasRecentPending = userBookings.some(b =>
       b.professional?._id === data._id &&
@@ -63,8 +59,6 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
       }
 
       setIsBooking(true);
-
-      // Category logic
       const bookingCategory = (selectedSkill && selectedSkill !== "All") 
         ? selectedSkill 
         : (data.skills && data.skills[0]) || 'General Service';
@@ -109,25 +103,21 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
         <div style={styles.verifiedBadge}>✓</div>
       </div>
 
-      {/* Name – larger & bolder */}
       <h4 style={styles.name}>{displayName}</h4>
 
-      {/* Skill tag – larger & bolder */}
       {skills.length > 0 && (
-        <div style={styles.skillTag}>
+        <div style={styles.skillTag} title={skills.join(' • ')}>
           {skills[0]}{skills.length > 1 ? ' +' : ''}
         </div>
       )}
 
-      {/* Info Section – larger & bolder */}
       <div style={styles.infoSection}>
         <div style={styles.infoItem}>
-          <span style={styles.infoIcon}>📍</span> {data.location?.split(',')[0] || 'Hargeisa'}
+          <span style={styles.infoIcon}>📍</span> 
+          <span style={styles.infoText}>{data.location?.split(',')[0] || 'Hargeisa'}</span>
         </div>
-     
       </div>
 
-      {/* Rating Stars */}
       <div style={styles.ratingContainer}>
         <div style={styles.starsContainer}>
           {[1, 2, 3, 4, 5].map((s) => (
@@ -157,7 +147,6 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
         )}
       </div>
 
-      {/* Hire Button – larger & bolder */}
       <button
         onClick={handleHire}
         disabled={isBooking || data.dailyRequestCount >= 3}
@@ -177,13 +166,14 @@ export default function ProCard({ pro, onAction, userBookings = [], onNotify, se
   );
 }
 
-// Updated styles – all text now bold and 10% larger
 const styles = {
   card: {
     background: '#ffffff',
-    borderRadius: '20px',
-    padding: '18px 16px 20px',
-    width: '270px', // slightly wider to accommodate larger text
+    borderRadius: '28px',
+    padding: '22px 16px',
+    width: '100%',
+    maxWidth: '300px',         // Cap maximum width
+    margin: '0 auto',
     border: '1px solid #64748b',
     display: 'flex',
     flexDirection: 'column',
@@ -193,6 +183,8 @@ const styles = {
     position: 'relative',
     overflow: 'hidden',
     boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.02), 0 10px 20px -8px rgba(0,0,0,0.08)',
+    wordBreak: 'break-word',
+    overflowWrap: 'break-word',
   },
   cardTopBar: {
     position: 'absolute',
@@ -219,7 +211,7 @@ const styles = {
     marginBottom: '12px',
   },
   avatar: {
-    width: '75px', // slightly larger for better proportion
+    width: '75px',
     height: '75px',
     borderRadius: '50%',
     background: 'linear-gradient(135deg, #4f46e5, #3730a3)',
@@ -231,7 +223,7 @@ const styles = {
   },
   avatarText: {
     color: 'white',
-    fontSize: '2.0rem', // increased by ~10%
+    fontSize: '2.0rem',
     fontWeight: '800',
     textTransform: 'uppercase',
   },
@@ -253,11 +245,12 @@ const styles = {
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
   },
   name: {
-    fontSize: '1.4rem', // increased from 1.3rem
+    fontSize: '1.4rem',
     fontWeight: '800',
     margin: '0 0 8px 0',
     color: '#0f172a',
     textTransform: 'uppercase',
+    width: '100%',
   },
   skillTag: {
     background: '#f1f5f9',
@@ -265,11 +258,15 @@ const styles = {
     padding: '6px 18px',
     borderRadius: '30px',
     fontWeight: '800',
-    fontSize: '0.95rem', // increased from 0.85rem
+    fontSize: '0.95rem',
     marginBottom: '16px',
     border: '1px solid #cbd5e1',
     display: 'inline-block',
     textTransform: 'uppercase',
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   infoSection: {
     width: '100%',
@@ -277,7 +274,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
-    fontSize: '0.95rem', // increased from 0.85rem
+    fontSize: '0.95rem',
     color: '#334155',
     fontWeight: '800',
     textTransform: 'uppercase',
@@ -287,10 +284,14 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '6px',
+    flexWrap: 'wrap',
   },
   infoIcon: {
-    fontSize: '1.1rem', // slightly larger to match
+    fontSize: '1.1rem',
     fontWeight: '400',
+  },
+  infoText: {
+    wordBreak: 'break-word',
   },
   ratingContainer: {
     display: 'flex',
@@ -298,23 +299,24 @@ const styles = {
     alignItems: 'center',
     gap: '4px',
     marginBottom: '16px',
+    width: '100%',
   },
   starsContainer: {
     display: 'flex',
     gap: '4px',
   },
   star: {
-    fontSize: '1.4rem', // increased from 1.3rem
+    fontSize: '1.4rem',
     transition: 'all 0.2s',
   },
   ratingText: {
-    fontSize: '0.9rem', // increased from 0.8rem
+    fontSize: '0.9rem',
     fontWeight: '800',
     color: '#64748b',
     textTransform: 'uppercase',
   },
   rateNowText: {
-    fontSize: '0.8rem', // increased from 0.7rem
+    fontSize: '0.8rem',
     color: '#10b981',
     fontWeight: '800',
     textTransform: 'uppercase',
@@ -325,7 +327,7 @@ const styles = {
     border: 'none',
     borderRadius: '30px',
     padding: '12px 18px',
-    fontSize: '1.0rem', // increased from 0.9rem
+    fontSize: '1.0rem',
     fontWeight: '800',
     cursor: 'pointer',
     display: 'flex',
@@ -339,6 +341,6 @@ const styles = {
     letterSpacing: '0.3px',
   },
   buttonIcon: {
-    fontSize: '1.1rem', // slightly larger
+    fontSize: '1.1rem',
   },
 };
